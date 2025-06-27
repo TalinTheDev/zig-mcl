@@ -1,0 +1,19 @@
+{
+	"name": "${localWorkspaceFolderBasename}",
+	"build": {
+		"dockerfile": "Dockerfile",
+		"args": {
+			"USER": "${localEnv:USER:talin}",
+			"HOME": "${localEnv:HOME:/home/talin}"
+		}
+	},
+	"runArgs": [
+		"--env=XDG_RUNTIME_DIR=/tmp",
+		"--env=WAYLAND_DISPLAY=${localEnv:WAYLAND_DISPLAY}",
+		"--volume=${localEnv:XDG_RUNTIME_DIR}/${localEnv:WAYLAND_DISPLAY}:/tmp/${localEnv:WAYLAND_DISPLAY}"
+	],
+	"remoteUser": "${localEnv:USER:talin}",
+	"workspaceMount": "source=${localWorkspaceFolder},target=/home/${localEnv:USER:talin}/Projects/${localWorkspaceFolderBasename},type=bind",
+	"workspaceFolder": "/home/${localEnv:USER:talin}/Projects/${localWorkspaceFolderBasename}",
+	"postCreateCommand": "/usr/bin/env fish ./zigSetup 0.14.0"
+}

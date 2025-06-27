@@ -1,0 +1,5 @@
+.Trash-1000/
+
+.zig-cache/
+zig-out/
+*.o

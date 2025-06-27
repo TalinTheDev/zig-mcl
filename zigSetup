@@ -1,0 +1,20 @@
+#!/usr/bin/env fish
+# Copyright 2025 Talin Sharma. Subject to the Apache-2.0 license.
+
+# Install ZIG & ZLS using ZVM if it doesn't exist
+
+if command -q zvm
+    echo "Zig already installed!"
+    exit 0
+end
+
+curl https://raw.githubusercontent.com/tristanisham/zvm/master/install.sh | bash
+source $HOME/.config/fish/config.fish
+
+if [ "$argv[1]" ]
+    zvm i --zls "$argv[1]"
+    zvm use "$argv[1]"
+else
+    zvm i --zls --full master
+    zvm use master
+end
