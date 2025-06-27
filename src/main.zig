@@ -2,7 +2,7 @@
 //! Project root
 
 // Imports
-const lib = @import("<proj_name>_lib");
+const lib = @import("zig_mcl_lib");
 const rl = @import("raylib");
 const std = @import("std");
 
@@ -17,7 +17,7 @@ pub fn main() !void {
     while (!rl.windowShouldClose()) {
         // Begin drawing and clear screen
         rl.beginDrawing();
-        rl.clearBackground(rl.Color.sky_blue);
+        rl.clearBackground(rl.Color.white);
 
         // End drawing
         rl.endDrawing();

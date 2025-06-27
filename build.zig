@@ -19,18 +19,18 @@ pub fn build(b: *std.Build) void {
         .optimize = optimize,
     });
 
-    exe_mod.addImport("<proj_name>_lib", lib_mod);
+    exe_mod.addImport("zig_mcl_lib", lib_mod);
 
     const lib = b.addLibrary(.{
         .linkage = .static,
-        .name = "<proj_name>_lib",
+        .name = "zig_mcl_lib",
         .root_module = lib_mod,
     });
 
     b.installArtifact(lib);
 
     const exe = b.addExecutable(.{
-        .name = "<proj_name>",
+        .name = "zig_mcl",
         .root_module = exe_mod,
     });
 

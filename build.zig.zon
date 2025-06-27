@@ -1,8 +1,8 @@
 // Copyright 2025 Talin Sharma. Subject to the Apache-2.0 license.
 .{
-    .name = .<proj_name>,
+    .name = .zig_mcl,
     .version = "0.0.0",
-
+    .fingerprint = 0x828f744ec7d4d95,
     .minimum_zig_version = "0.14.0",
 
     .dependencies = .{
