@@ -34,8 +34,9 @@ pub const Robot = struct {
         return self.center.y - side.start.y + radius;
     }
 
-    pub fn update(self: *Robot, rand: *std.Random) void {
-        const diff = lib.itf(rand.intRangeAtMost(i32, 0, 20));
+    /// Handles movement for a robot
+    pub fn update(self: *Robot, rand: *std.Random, exact: bool) void {
+        const diff = if (!exact) lib.itf(rand.intRangeAtMost(i32, 0, 20)) else 10;
         if (lib.keyPressed(lib.MOVE.UP)) {
             self.center.y -= diff;
         }
@@ -50,16 +51,16 @@ pub const Robot = struct {
         }
 
         // Check field wall collisions
-        if (lib.checkFieldCollision(self, 0)) {
+        if (lib.checkFieldCollision(self, 0) or lib.field.walls[0].start.y + 15 > self.center.y) {
             self.center.y = lib.field.walls[0].start.y + 15;
         }
-        if (lib.checkFieldCollision(self, 1)) {
+        if (lib.checkFieldCollision(self, 1) or lib.field.walls[1].start.x - 15 < self.center.x) {
             self.center.x = lib.field.walls[1].start.x - 15;
         }
-        if (lib.checkFieldCollision(self, 2)) {
+        if (lib.checkFieldCollision(self, 2) or lib.field.walls[2].start.y - 15 < self.center.y) {
             self.center.y = lib.field.walls[2].start.y - 15;
         }
-        if (lib.checkFieldCollision(self, 3)) {
+        if (lib.checkFieldCollision(self, 3) or lib.field.walls[3].start.x + 15 > self.center.x) {
             self.center.x = lib.field.walls[3].start.x + 15;
         }
     }

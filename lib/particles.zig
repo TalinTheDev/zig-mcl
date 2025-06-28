@@ -19,26 +19,24 @@ pub const Particle = struct {
 pub fn initParticles(comptime count: i32, rand: *std.Random) [count]Particle {
     var particles = [_]Particle{undefined} ** count;
     for (0..count) |i| {
-        var robot = Robot.Robot{
-            .center = rl.Vector2{
-                .x = utils.itf(rand.intRangeAtMost(i32, Field.field.x + 15, Field.field.x + Field.field.width - 15)),
-                .y = utils.itf(rand.intRangeAtMost(i32, Field.field.x + 15, Field.field.x + Field.field.width - 15)),
-            },
-            .radius = 10,
-            .color = rl.Color.green,
-        };
-
-        _ = &robot;
         particles[i] = Particle{
-            .robot = robot,
+            .robot = Robot.Robot{
+                .center = rl.Vector2{
+                    .x = utils.itf(rand.intRangeAtMost(i32, Field.field.x + 15, Field.field.x + Field.field.width - 15)),
+                    .y = utils.itf(rand.intRangeAtMost(i32, Field.field.x + 15, Field.field.x + Field.field.width - 15)),
+                },
+                .radius = 10,
+                .color = rl.Color.green,
+            },
             .id = i,
         };
     }
     return particles;
 }
 
+/// Updates the particles (random movement)
 pub fn updateParticles(particles: []Particle, rand: *std.Random) void {
     for (particles) |*particle| {
-        particle.robot.update(rand);
+        particle.robot.update(rand, false);
     }
 }
