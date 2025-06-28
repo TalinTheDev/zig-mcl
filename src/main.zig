@@ -6,12 +6,6 @@ const lib = @import("zig_mcl_lib");
 const rl = @import("raylib");
 const std = @import("std");
 
-const Robot = struct {
-    center: rl.Vector2,
-    radius: f32 = 10,
-    color: rl.Color = rl.Color.orange,
-};
-
 // Game entry point
 pub fn main() !void {
     // Initialize window and OpenGL context; Also defer closing both
@@ -28,56 +22,39 @@ pub fn main() !void {
     };
     defer rl.unloadFont(font);
 
-    // Define the field & its boundaries
-    const field = rl.Rectangle{ .x = 50, .y = 50, .width = 600, .height = 600 };
-    const fieldTop = .{
-        .start = rl.Vector2{ .x = 50, .y = 50 },
-        .end = rl.Vector2{ .x = 650, .y = 50 },
-    };
-    const fieldRight = .{
-        .start = fieldTop.end,
-        .end = rl.Vector2{ .x = 650, .y = 650 },
-    };
-    const fieldBottom = .{
-        .start = fieldRight.end,
-        .end = rl.Vector2{ .x = 50, .y = 650 },
-    };
-    const fieldLeft = .{
-        .start = fieldBottom.end,
-        .end = fieldTop.start,
-    };
-
     // Define the robot
-    var robot = Robot{ .center = rl.Vector2{ .x = 345, .y = 345 } };
+    var robot = lib.Robot{ .center = rl.Vector2{ .x = 345, .y = 345 } };
 
     // While window should stay open...
     while (!rl.windowShouldClose()) {
         // Updates
 
         // Handle inputs
-        if (rl.isKeyDown(rl.KeyboardKey.w) or rl.isKeyDown(rl.KeyboardKey.up)) {
+        if (lib.keyPressed(lib.MOVE.UP)) {
             robot.center.y -= 10;
         }
-        if (rl.isKeyDown(rl.KeyboardKey.s) or rl.isKeyDown(rl.KeyboardKey.down)) {
+        if (lib.keyPressed(lib.MOVE.DOWN)) {
             robot.center.y += 10;
         }
-        if (rl.isKeyDown(rl.KeyboardKey.a) or rl.isKeyDown(rl.KeyboardKey.left)) {
+        if (lib.keyPressed(lib.MOVE.LEFT)) {
             robot.center.x -= 10;
         }
-        if (rl.isKeyDown(rl.KeyboardKey.d) or rl.isKeyDown(rl.KeyboardKey.right)) {
+        if (lib.keyPressed(lib.MOVE.RIGHT)) {
             robot.center.x += 10;
         }
 
         // Check field wall collisions
-        if (rl.checkCollisionCircleLine(robot.center, robot.radius, fieldTop.start, fieldTop.end)) {
-            robot.center.y = fieldTop.start.y + 15;
-        } else if (rl.checkCollisionCircleLine(robot.center, robot.radius, fieldRight.start, fieldRight.end)) {
-            robot.center.x = fieldRight.start.x - 15;
+        if (lib.checkFieldCollision(robot, lib.field.walls[0])) {
+            robot.center.y = lib.field.walls[0].start.y + 15;
         }
-        if (rl.checkCollisionCircleLine(robot.center, robot.radius, fieldBottom.start, fieldBottom.end)) {
-            robot.center.y = fieldBottom.start.y - 15;
-        } else if (rl.checkCollisionCircleLine(robot.center, robot.radius, fieldLeft.start, fieldLeft.end)) {
-            robot.center.x = fieldLeft.start.x + 15;
+        if (lib.checkFieldCollision(robot, lib.field.walls[1])) {
+            robot.center.x = lib.field.walls[1].start.x - 15;
+        }
+        if (lib.checkFieldCollision(robot, lib.field.walls[2])) {
+            robot.center.y = lib.field.walls[2].start.y - 15;
+        }
+        if (lib.checkFieldCollision(robot, lib.field.walls[3])) {
+            robot.center.x = lib.field.walls[3].start.x + 15;
         }
 
         // Begin drawing and clear screen
@@ -85,7 +62,7 @@ pub fn main() !void {
         rl.clearBackground(rl.Color.white);
 
         // Draw field & robot
-        rl.drawRectangleLinesEx(field, 5.0, rl.Color.black);
+        rl.drawRectangleLinesEx(lib.field.field, 5.0, rl.Color.black);
         rl.drawCircleV(robot.center, robot.radius, robot.color);
 
         // Draw debug text
