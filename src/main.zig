@@ -69,6 +69,11 @@ pub fn main() !void {
         rl.drawTextEx(font, rl.textFormat("%d FPS", .{rl.getFPS()}), rl.Vector2{ .x = 700, .y = 50 }, 28, 1.0, rl.Color.blue);
         rl.drawTextEx(font, rl.textFormat("Robot Position: (%.2f, %.2f)", .{ robot.center.x, robot.center.y }), rl.Vector2{ .x = 700, .y = 100 }, 28, 1.0, rl.Color.black);
 
+        rl.drawTextEx(font, rl.textFormat("Robot Distance From Top: %.2f", .{robot.distanceFromSide(lib.field.walls[0])}), rl.Vector2{ .x = 700, .y = 125 }, 28, 1.0, rl.Color.black);
+        rl.drawTextEx(font, rl.textFormat("Robot Distance From Right: %.2f", .{robot.distanceFromSide(lib.field.walls[1])}), rl.Vector2{ .x = 700, .y = 150 }, 28, 1.0, rl.Color.black);
+        rl.drawTextEx(font, rl.textFormat("Robot Distance From Bottom: %.2f", .{robot.distanceFromSide(lib.field.walls[2])}), rl.Vector2{ .x = 700, .y = 175 }, 28, 1.0, rl.Color.black);
+        rl.drawTextEx(font, rl.textFormat("Robot Distance From Left: %.2f", .{robot.distanceFromSide(lib.field.walls[3])}), rl.Vector2{ .x = 700, .y = 200 }, 28, 1.0, rl.Color.black);
+
         // End drawing
         rl.endDrawing();
     }
