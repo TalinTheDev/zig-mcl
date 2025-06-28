@@ -20,7 +20,7 @@ pub fn main() !void {
 
     // Initialize window and OpenGL context; Also defer closing both
     rl.initWindow(1350, 700, "MCL Simulation");
-    rl.setTargetFPS(60);
+    rl.setTargetFPS(6);
     defer rl.closeWindow();
 
     // Load a font or use the default; Also defer unloading it
@@ -75,14 +75,14 @@ pub fn main() !void {
         rl.beginDrawing();
         rl.clearBackground(rl.Color.white);
 
-        // Draw field & robot
-        rl.drawRectangleLinesEx(lib.field.field, 5.0, rl.Color.black);
-        rl.drawCircleV(robot.center, robot.radius, robot.color);
-
         // Draw particles
         for (particles[0..PARTICLE_COUNT]) |particle| {
             rl.drawCircleV(particle.robot.center, particle.robot.radius, particle.robot.color);
         }
+
+        // Draw field & robot
+        rl.drawRectangleLinesEx(lib.field.field, 5.0, rl.Color.black);
+        rl.drawCircleV(robot.center, robot.radius, robot.color);
 
         // Draw debug text
         rl.drawTextEx(font, rl.textFormat("%d FPS", .{rl.getFPS()}), rl.Vector2{ .x = 700, .y = 50 }, 28, 1.0, rl.Color.blue);
