@@ -8,6 +8,16 @@ const std = @import("std");
 
 // Game entry point
 pub fn main() !void {
+    // Create a random number generator
+    var prng = std.Random.DefaultPrng.init(blk: {
+        var seed: u64 = undefined;
+        std.posix.getrandom(std.mem.asBytes(&seed)) catch unreachable;
+        break :blk seed;
+    });
+    var random = prng.random();
+    var rand = &random;
+    _ = &rand;
+
     // Initialize window and OpenGL context; Also defer closing both
     rl.initWindow(1350, 700, "MCL Simulation");
     rl.setTargetFPS(60);
@@ -26,8 +36,8 @@ pub fn main() !void {
     var robot = lib.Robot{ .center = rl.Vector2{ .x = 345, .y = 345 } };
 
     // Define the particles
-    const PARTICLE_COUNT = 100;
-    const particles = lib.initParticles(PARTICLE_COUNT);
+    const PARTICLE_COUNT = 500;
+    const particles = lib.initParticles(PARTICLE_COUNT, rand);
 
     // While window should stay open...
     while (!rl.windowShouldClose()) {
@@ -83,6 +93,7 @@ pub fn main() !void {
         rl.drawTextEx(font, rl.textFormat("Robot Distance From Bottom: %.2f", .{robot.distanceFromSide(lib.field.walls[2])}), rl.Vector2{ .x = 700, .y = 175 }, 28, 1.0, rl.Color.black);
         rl.drawTextEx(font, rl.textFormat("Robot Distance From Left: %.2f", .{robot.distanceFromSide(lib.field.walls[3])}), rl.Vector2{ .x = 700, .y = 200 }, 28, 1.0, rl.Color.black);
 
+        rl.drawTextEx(font, rl.textFormat("Particle Count: %d", .{particles.len}), rl.Vector2{ .x = 700, .y = 250 }, 28, 1.0, rl.Color.black);
         // End drawing
         rl.endDrawing();
     }
