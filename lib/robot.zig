@@ -5,6 +5,7 @@
 const std = @import("std");
 const rl = @import("raylib");
 const Field = @import("field.zig");
+const lib = @import("root.zig");
 
 /// Robot
 pub const Robot = struct {
@@ -31,5 +32,34 @@ pub const Robot = struct {
             radius = -15.0;
         }
         return self.center.y - side.start.y + radius;
+    }
+
+    pub fn update(self: *Robot) void {
+        if (lib.keyPressed(lib.MOVE.UP)) {
+            self.center.y -= 10;
+        }
+        if (lib.keyPressed(lib.MOVE.DOWN)) {
+            self.center.y += 10;
+        }
+        if (lib.keyPressed(lib.MOVE.LEFT)) {
+            self.center.x -= 10;
+        }
+        if (lib.keyPressed(lib.MOVE.RIGHT)) {
+            self.center.x += 10;
+        }
+
+        // Check field wall collisions
+        if (lib.checkFieldCollision(self, 0)) {
+            self.center.y = lib.field.walls[0].start.y + 15;
+        }
+        if (lib.checkFieldCollision(self, 1)) {
+            self.center.x = lib.field.walls[1].start.x - 15;
+        }
+        if (lib.checkFieldCollision(self, 2)) {
+            self.center.y = lib.field.walls[2].start.y - 15;
+        }
+        if (lib.checkFieldCollision(self, 3)) {
+            self.center.x = lib.field.walls[3].start.x + 15;
+        }
     }
 };

@@ -33,3 +33,9 @@ pub fn initParticles(comptime count: i32, rand: *std.Random) [count]Particle {
     }
     return particles;
 }
+
+// pub fn updateParticles(particles: []Particle) void {
+//     for (particles) |particle| {
+//
+//     }
+// }

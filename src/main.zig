@@ -47,32 +47,7 @@ pub fn main() !void {
         // Updates
 
         // Handle inputs
-        if (lib.keyPressed(lib.MOVE.UP)) {
-            robot.center.y -= 10;
-        }
-        if (lib.keyPressed(lib.MOVE.DOWN)) {
-            robot.center.y += 10;
-        }
-        if (lib.keyPressed(lib.MOVE.LEFT)) {
-            robot.center.x -= 10;
-        }
-        if (lib.keyPressed(lib.MOVE.RIGHT)) {
-            robot.center.x += 10;
-        }
-
-        // Check field wall collisions
-        if (lib.checkFieldCollision(robot, 0)) {
-            robot.center.y = lib.field.walls[0].start.y + 15;
-        }
-        if (lib.checkFieldCollision(robot, 1)) {
-            robot.center.x = lib.field.walls[1].start.x - 15;
-        }
-        if (lib.checkFieldCollision(robot, 2)) {
-            robot.center.y = lib.field.walls[2].start.y - 15;
-        }
-        if (lib.checkFieldCollision(robot, 3)) {
-            robot.center.x = lib.field.walls[3].start.x + 15;
-        }
+        robot.update();
 
         // Begin drawing and clear screen
         rl.beginDrawing();
