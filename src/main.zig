@@ -25,6 +25,10 @@ pub fn main() !void {
     // Define the robot
     var robot = lib.Robot{ .center = rl.Vector2{ .x = 345, .y = 345 } };
 
+    // Define the particles
+    const PARTICLE_COUNT = 100;
+    const particles = lib.initParticles(PARTICLE_COUNT);
+
     // While window should stay open...
     while (!rl.windowShouldClose()) {
         // Updates
@@ -64,6 +68,11 @@ pub fn main() !void {
         // Draw field & robot
         rl.drawRectangleLinesEx(lib.field.field, 5.0, rl.Color.black);
         rl.drawCircleV(robot.center, robot.radius, robot.color);
+
+        // Draw particles
+        for (particles[0..PARTICLE_COUNT]) |particle| {
+            rl.drawCircleV(particle.robot.center, particle.robot.radius, particle.robot.color);
+        }
 
         // Draw debug text
         rl.drawTextEx(font, rl.textFormat("%d FPS", .{rl.getFPS()}), rl.Vector2{ .x = 700, .y = 50 }, 28, 1.0, rl.Color.blue);

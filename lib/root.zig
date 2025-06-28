@@ -7,6 +7,7 @@ const rl = @import("raylib");
 // General Re-exports
 pub usingnamespace @import("utils.zig");
 pub usingnamespace @import("robot.zig");
+pub usingnamespace @import("particles.zig");
 
 // Robot Re-Export
 const Robot = @import("robot.zig");
