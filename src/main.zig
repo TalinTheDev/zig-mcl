@@ -23,7 +23,8 @@ pub fn main() !void {
 
     // Initialize window and OpenGL context; Also defer closing both
     rl.initWindow(1350, 700, "MCL Simulation");
-    rl.setTargetFPS(6);
+    rl.setTargetFPS(10);
+
     defer rl.closeWindow();
 
     // Load a font or use the default; Also defer unloading it
@@ -40,7 +41,7 @@ pub fn main() !void {
 
     // Define the particles
     const PARTICLE_COUNT = 500;
-    const particles = lib.initParticles(PARTICLE_COUNT, rand);
+    var particles = lib.initParticles(PARTICLE_COUNT, rand);
 
     // While window should stay open...
     while (!rl.windowShouldClose()) {
@@ -48,6 +49,7 @@ pub fn main() !void {
 
         // Handle inputs
         robot.update();
+        lib.updateParticles(particles[0..]);
 
         // Begin drawing and clear screen
         rl.beginDrawing();

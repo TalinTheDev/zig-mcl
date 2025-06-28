@@ -35,17 +35,22 @@ pub const Robot = struct {
     }
 
     pub fn update(self: *Robot) void {
+        var moved = false;
         if (lib.keyPressed(lib.MOVE.UP)) {
             self.center.y -= 10;
+            moved = true;
         }
         if (lib.keyPressed(lib.MOVE.DOWN)) {
             self.center.y += 10;
+            moved = true;
         }
         if (lib.keyPressed(lib.MOVE.LEFT)) {
             self.center.x -= 10;
+            moved = true;
         }
         if (lib.keyPressed(lib.MOVE.RIGHT)) {
             self.center.x += 10;
+            moved = true;
         }
 
         // Check field wall collisions

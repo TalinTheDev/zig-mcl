@@ -19,23 +19,36 @@ pub const Particle = struct {
 pub fn initParticles(comptime count: i32, rand: *std.Random) [count]Particle {
     var particles = [_]Particle{undefined} ** count;
     for (0..count) |i| {
-        particles[i] = Particle{
-            .robot = Robot.Robot{
-                .center = rl.Vector2{
-                    .x = utils.itf(rand.intRangeAtMost(i32, Field.field.x + 15, Field.field.x + Field.field.width - 15)),
-                    .y = utils.itf(rand.intRangeAtMost(i32, Field.field.x + 15, Field.field.x + Field.field.width - 15)),
-                },
-                .radius = 10,
-                .color = rl.Color.green,
+        var robot = Robot.Robot{
+            .center = rl.Vector2{
+                .x = utils.itf(rand.intRangeAtMost(i32, Field.field.x + 15, Field.field.x + Field.field.width - 15)),
+                .y = utils.itf(rand.intRangeAtMost(i32, Field.field.x + 15, Field.field.x + Field.field.width - 15)),
             },
+            .radius = 10,
+            .color = rl.Color.green,
+        };
+
+        _ = &robot;
+        particles[i] = Particle{
+            .robot = robot,
             .id = i,
         };
     }
     return particles;
 }
 
-// pub fn updateParticles(particles: []Particle) void {
-//     for (particles) |particle| {
-//
-//     }
-// }
+pub fn updateParticles(particles: []Particle) void {
+    std.debug.print("\n\n================================================\n\n", .{});
+    for (particles) |*particle| {
+        std.debug.print("#{} - ({d}, {d}) -> ", .{
+            particle.id,
+            particle.robot.center.x,
+            particle.robot.center.y,
+        });
+        particle.robot.update();
+        std.debug.print("({d}, {d})\n", .{
+            particle.robot.center.x,
+            particle.robot.center.y,
+        });
+    }
+}
