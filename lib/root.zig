@@ -21,6 +21,7 @@ pub const field = .{
 };
 
 /// Checks for a collision between a robot and a field wall
-pub fn checkFieldCollision(robot: Robot.Robot, wall: Field.FieldWall) bool {
+pub fn checkFieldCollision(robot: Robot.Robot, wallNum: usize) bool {
+    const wall = field.walls[wallNum];
     return rl.checkCollisionCircleLine(robot.center, robot.radius, wall.start, wall.end);
 }

@@ -12,9 +12,10 @@ pub const Robot = struct {
     radius: f32 = 10,
     color: rl.Color = rl.Color.orange,
 
-    pub fn distanceFromSide(self: *Robot, side: Field.FieldWall) f32 {
+    pub fn distanceFromSide(self: *Robot, sideNum: usize) f32 {
         // Adding/Subtracting 15 to account for robot radius & wall thickness
         var radius: f32 = 15.0;
+        const side = Field.walls[sideNum];
 
         // if the wall is vertical -> return horizontal distance;
         // else -> return vertical distance;

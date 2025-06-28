@@ -6,6 +6,9 @@ const lib = @import("zig_mcl_lib");
 const rl = @import("raylib");
 const std = @import("std");
 
+// Global Variables
+var font: rl.Font = undefined;
+
 // Game entry point
 pub fn main() !void {
     // Create a random number generator
@@ -24,7 +27,7 @@ pub fn main() !void {
     defer rl.closeWindow();
 
     // Load a font or use the default; Also defer unloading it
-    const font = rl.loadFont("assets/fonts/Asap-VariableFont_wdth,wght.ttf") catch f: {
+    font = rl.loadFont("assets/fonts/Asap-VariableFont_wdth,wght.ttf") catch f: {
         rl.traceLog(rl.TraceLogLevel.err, "Couldn't load font...", .{});
 
         // If this breaks too, you're just cooked.
@@ -58,16 +61,16 @@ pub fn main() !void {
         }
 
         // Check field wall collisions
-        if (lib.checkFieldCollision(robot, lib.field.walls[0])) {
+        if (lib.checkFieldCollision(robot, 0)) {
             robot.center.y = lib.field.walls[0].start.y + 15;
         }
-        if (lib.checkFieldCollision(robot, lib.field.walls[1])) {
+        if (lib.checkFieldCollision(robot, 1)) {
             robot.center.x = lib.field.walls[1].start.x - 15;
         }
-        if (lib.checkFieldCollision(robot, lib.field.walls[2])) {
+        if (lib.checkFieldCollision(robot, 2)) {
             robot.center.y = lib.field.walls[2].start.y - 15;
         }
-        if (lib.checkFieldCollision(robot, lib.field.walls[3])) {
+        if (lib.checkFieldCollision(robot, 3)) {
             robot.center.x = lib.field.walls[3].start.x + 15;
         }
 
@@ -85,16 +88,20 @@ pub fn main() !void {
         rl.drawCircleV(robot.center, robot.radius, robot.color);
 
         // Draw debug text
-        rl.drawTextEx(font, rl.textFormat("%d FPS", .{rl.getFPS()}), rl.Vector2{ .x = 700, .y = 50 }, 28, 1.0, rl.Color.blue);
-        rl.drawTextEx(font, rl.textFormat("Robot Position: (%.2f, %.2f)", .{ robot.center.x, robot.center.y }), rl.Vector2{ .x = 700, .y = 100 }, 28, 1.0, rl.Color.black);
+        drawText("%d FPS", .{rl.getFPS()}, 700, 50, rl.Color.blue);
+        drawText("Robot Position: (%.2f, %.2f)", .{ robot.center.x, robot.center.y }, 700, 100, rl.Color.black);
 
-        rl.drawTextEx(font, rl.textFormat("Robot Distance From Top: %.2f", .{robot.distanceFromSide(lib.field.walls[0])}), rl.Vector2{ .x = 700, .y = 125 }, 28, 1.0, rl.Color.black);
-        rl.drawTextEx(font, rl.textFormat("Robot Distance From Right: %.2f", .{robot.distanceFromSide(lib.field.walls[1])}), rl.Vector2{ .x = 700, .y = 150 }, 28, 1.0, rl.Color.black);
-        rl.drawTextEx(font, rl.textFormat("Robot Distance From Bottom: %.2f", .{robot.distanceFromSide(lib.field.walls[2])}), rl.Vector2{ .x = 700, .y = 175 }, 28, 1.0, rl.Color.black);
-        rl.drawTextEx(font, rl.textFormat("Robot Distance From Left: %.2f", .{robot.distanceFromSide(lib.field.walls[3])}), rl.Vector2{ .x = 700, .y = 200 }, 28, 1.0, rl.Color.black);
+        drawText("Robot Distance From Top: %.2f", .{robot.distanceFromSide(0)}, 700, 125, rl.Color.black);
+        drawText("Robot Distance From Right: %.2f", .{robot.distanceFromSide(1)}, 700, 150, rl.Color.black);
+        drawText("Robot Distance From Bottom: %.2f", .{robot.distanceFromSide(2)}, 700, 175, rl.Color.black);
+        drawText("Robot Distance From Left: %.2f", .{robot.distanceFromSide(3)}, 700, 200, rl.Color.black);
 
-        rl.drawTextEx(font, rl.textFormat("Particle Count: %d", .{particles.len}), rl.Vector2{ .x = 700, .y = 250 }, 28, 1.0, rl.Color.black);
+        drawText("Particle Count: %d", .{particles.len}, 700, 250, rl.Color.black);
         // End drawing
         rl.endDrawing();
     }
+}
+
+pub fn drawText(text: [:0]const u8, args: anytype, x: f32, y: f32, color: rl.Color) void {
+    rl.drawTextEx(font, rl.textFormat(text, args), rl.Vector2{ .x = x, .y = y }, 28, 1.0, color);
 }
