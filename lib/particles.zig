@@ -37,18 +37,8 @@ pub fn initParticles(comptime count: i32, rand: *std.Random) [count]Particle {
     return particles;
 }
 
-pub fn updateParticles(particles: []Particle) void {
-    std.debug.print("\n\n================================================\n\n", .{});
+pub fn updateParticles(particles: []Particle, rand: *std.Random) void {
     for (particles) |*particle| {
-        std.debug.print("#{} - ({d}, {d}) -> ", .{
-            particle.id,
-            particle.robot.center.x,
-            particle.robot.center.y,
-        });
-        particle.robot.update();
-        std.debug.print("({d}, {d})\n", .{
-            particle.robot.center.x,
-            particle.robot.center.y,
-        });
+        particle.robot.update(rand);
     }
 }

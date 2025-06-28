@@ -34,23 +34,19 @@ pub const Robot = struct {
         return self.center.y - side.start.y + radius;
     }
 
-    pub fn update(self: *Robot) void {
-        var moved = false;
+    pub fn update(self: *Robot, rand: *std.Random) void {
+        const diff = lib.itf(rand.intRangeAtMost(i32, 0, 20));
         if (lib.keyPressed(lib.MOVE.UP)) {
-            self.center.y -= 10;
-            moved = true;
+            self.center.y -= diff;
         }
         if (lib.keyPressed(lib.MOVE.DOWN)) {
-            self.center.y += 10;
-            moved = true;
+            self.center.y += diff;
         }
         if (lib.keyPressed(lib.MOVE.LEFT)) {
-            self.center.x -= 10;
-            moved = true;
+            self.center.x -= diff;
         }
         if (lib.keyPressed(lib.MOVE.RIGHT)) {
-            self.center.x += 10;
-            moved = true;
+            self.center.x += diff;
         }
 
         // Check field wall collisions

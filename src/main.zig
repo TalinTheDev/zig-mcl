@@ -48,8 +48,8 @@ pub fn main() !void {
         // Updates
 
         // Handle inputs
-        robot.update();
-        lib.updateParticles(particles[0..]);
+        robot.update(rand);
+        lib.updateParticles(particles[0..], rand);
 
         // Begin drawing and clear screen
         rl.beginDrawing();
