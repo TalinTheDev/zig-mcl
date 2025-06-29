@@ -27,9 +27,10 @@ pub fn main() !void {
     var prngD = std.Random.DefaultPrng.init(seed);
     var randD = prngD.random();
     const normal = zprob.Normal(f32).init(&randD);
+    const uniformDist = zprob.Uniform(f32).init(&randD);
     // Initialize window and OpenGL context; Also defer closing both
     rl.initWindow(1350, 700, "MCL Simulation");
-    rl.setTargetFPS(10);
+    rl.setTargetFPS(60);
 
     defer rl.closeWindow();
 
@@ -47,7 +48,7 @@ pub fn main() !void {
     var robotAcc = lib.Robot{ .center = rl.Vector2{ .x = 345, .y = 345 }, .color = rl.Color.blue };
 
     // Define the particles
-    const PARTICLE_COUNT = 2;
+    const PARTICLE_COUNT = 1000;
     var particles = lib.initParticles(PARTICLE_COUNT, rand);
 
     // While window should stay open...
@@ -58,7 +59,7 @@ pub fn main() !void {
         robot.update(rand, true); // Estimated robot uses exact movement
         robotAcc.update(rand, false); // Actual robot uses random movement
         lib.updateParticles(particles[0..], rand);
-        lib.resample(particles[0..], PARTICLE_COUNT, normal, &robot);
+        const mclEst = lib.resample(particles[0..], PARTICLE_COUNT, normal, uniformDist, &robot);
 
         // Begin drawing and clear screen
         rl.beginDrawing();
@@ -73,17 +74,19 @@ pub fn main() !void {
         rl.drawRectangleLinesEx(lib.field.field, 5.0, rl.Color.black);
         rl.drawCircleV(robot.center, robot.radius, robot.color);
         rl.drawCircleV(robotAcc.center, robotAcc.radius, robotAcc.color);
+        rl.drawCircleV(mclEst, robot.radius, rl.Color.pink);
 
         // Draw debug text
         drawText("%d FPS", .{rl.getFPS()}, 700, 50, rl.Color.red);
         drawText("Actual Robot", .{}, 700, 100, rl.Color.blue);
         drawText("Estimated Robot", .{}, 700, 125, rl.Color.orange);
         drawText("Simulated Robot", .{}, 700, 150, rl.Color.green);
+        drawText("MCL Estimated Robot", .{}, 700, 175, rl.Color.pink);
 
-        drawText("Robot Estimated Position: (%.2f, %.2f)", .{ robot.center.x, robot.center.y }, 700, 200, rl.Color.black);
-        drawText("Robot Actual Position: (%.2f, %.2f)", .{ robotAcc.center.x, robotAcc.center.y }, 700, 225, rl.Color.black);
+        drawText("Robot Estimated Position: (%.2f, %.2f)", .{ robot.center.x, robot.center.y }, 700, 225, rl.Color.black);
+        drawText("Robot Actual Position: (%.2f, %.2f)", .{ robotAcc.center.x, robotAcc.center.y }, 700, 250, rl.Color.black);
 
-        drawText("Particle Count: %d", .{particles.len}, 700, 275, rl.Color.black);
+        drawText("Particle Count: %d", .{particles.len}, 700, 300, rl.Color.black);
         // End drawing
         rl.endDrawing();
     }

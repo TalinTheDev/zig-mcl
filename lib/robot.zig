@@ -6,6 +6,7 @@ const std = @import("std");
 const rl = @import("raylib");
 const Field = @import("field.zig");
 const lib = @import("root.zig");
+const zprob = @import("zprob");
 
 /// Robot
 pub const Robot = struct {
@@ -13,7 +14,8 @@ pub const Robot = struct {
     radius: f32 = 10,
     color: rl.Color = rl.Color.orange,
 
-    pub fn distanceFromSide(self: *Robot, sideNum: usize) f32 {
+    pub fn distanceFromSide(self: *Robot, sideNum: usize, rand: zprob.Uniform(f32), exact: bool) f32 {
+        const diff = if (!exact) rand.sample(-2, 2) else 1;
         // Adding/Subtracting 15 to account for robot radius & wall thickness
         var radius: f32 = 15.0;
         const side = Field.walls[sideNum];
@@ -25,18 +27,18 @@ pub const Robot = struct {
             if (self.center.x > side.start.x) {
                 radius = -15.0;
             }
-            return self.center.x - side.start.x + radius;
+            return (self.center.x - side.start.x) * diff + radius;
         }
 
         if (self.center.y > side.start.y) {
             radius = -15.0;
         }
-        return self.center.y - side.start.y + radius;
+        return (self.center.y - side.start.y) * diff + radius;
     }
 
     /// Handles movement for a robot
     pub fn update(self: *Robot, rand: *std.Random, exact: bool) void {
-        const diff = if (!exact) lib.itf(rand.intRangeAtMost(i32, 0, 20)) else 10;
+        const diff = if (!exact) lib.itf(rand.intRangeAtMost(i32, 0, 4)) else 2;
         if (lib.keyPressed(lib.MOVE.UP)) {
             self.center.y -= diff;
         }

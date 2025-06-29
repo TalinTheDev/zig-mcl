@@ -14,6 +14,11 @@ pub fn fti(float: f32) i32 {
     return @as(i32, @intFromFloat(float));
 }
 
+/// Convert a float (f32) to an unsigned integer (u32)
+pub fn ftu(float: f64) u64 {
+    return @as(u64, @intFromFloat(float));
+}
+
 /// Possible movements
 pub const MOVE = enum {
     UP,
