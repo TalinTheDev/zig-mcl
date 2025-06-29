@@ -4,7 +4,7 @@
 // Imports
 const std = @import("std");
 const rl = @import("raylib");
-const Field = @import("field.zig");
+const wall = @import("wall.zig");
 const lib = @import("root.zig");
 const zprob = @import("zprob");
 
@@ -18,7 +18,7 @@ pub const Robot = struct {
         const diff = if (!exact) rand.sample(-2, 2) else 1;
         // Adding/Subtracting 15 to account for robot radius & wall thickness
         var radius: f32 = 15.0;
-        const side = Field.walls[sideNum];
+        const side = wall.walls[sideNum];
 
         // if the wall is vertical -> return horizontal distance;
         // else -> return vertical distance;
@@ -39,6 +39,8 @@ pub const Robot = struct {
     /// Handles movement for a robot
     pub fn update(self: *Robot, rand: *std.Random, exact: bool) void {
         const diff = if (!exact) lib.itf(rand.intRangeAtMost(i32, 0, 4)) else 2;
+        const preMoveY = self.center.y;
+        const preMoveX = self.center.x;
         if (lib.keyPressed(lib.MOVE.UP)) {
             self.center.y -= diff;
         }
@@ -53,17 +55,24 @@ pub const Robot = struct {
         }
 
         // Check field wall collisions
-        if (lib.checkFieldCollision(self, 0) or lib.field.walls[0].start.y + 15 > self.center.y) {
-            self.center.y = lib.field.walls[0].start.y + 15;
-        }
-        if (lib.checkFieldCollision(self, 1) or lib.field.walls[1].start.x - 15 < self.center.x) {
-            self.center.x = lib.field.walls[1].start.x - 15;
-        }
-        if (lib.checkFieldCollision(self, 2) or lib.field.walls[2].start.y - 15 < self.center.y) {
-            self.center.y = lib.field.walls[2].start.y - 15;
-        }
-        if (lib.checkFieldCollision(self, 3) or lib.field.walls[3].start.x + 15 > self.center.x) {
-            self.center.x = lib.field.walls[3].start.x + 15;
+        for (0..lib.walls.len) |i| {
+            const rightX = preMoveX > lib.wall.walls[i].start.x;
+            const aboveY = preMoveY > lib.wall.walls[i].start.y;
+            if (lib.checkHorizontalCollision(self, i, rightX)) {
+                self.center.x = lib.wall.walls[i].start.x + 12.5;
+                if (rightX) {
+                    self.center.x = lib.wall.walls[i].start.x + 12.5;
+                } else {
+                    self.center.x = lib.wall.walls[i].start.x - 12.5;
+                }
+            }
+            if (lib.checkVerticalCollision(self, i, aboveY)) {
+                if (aboveY) {
+                    self.center.y = lib.wall.walls[i].start.y + 12.5;
+                } else {
+                    self.center.y = lib.wall.walls[i].start.y - 12.5;
+                }
+            }
         }
     }
 };

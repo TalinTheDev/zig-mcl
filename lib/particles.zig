@@ -3,16 +3,16 @@
 
 // Imports
 const rl = @import("raylib");
-const Robot = @import("robot.zig");
+const bot = @import("bot.zig");
 const std = @import("std");
 const utils = @import("utils.zig");
-const Field = @import("field.zig");
+const wall = @import("wall.zig");
 const zprob = @import("zprob");
 const lib = @import("root.zig");
 
 /// Represents a particle
 pub const Particle = struct {
-    robot: Robot.Robot,
+    robot: bot.Robot,
     id: usize,
 };
 
@@ -20,12 +20,14 @@ pub const Particle = struct {
 /// within the field's boundaries
 pub fn initParticles(comptime count: i32, rand: *std.Random) [count]Particle {
     var particles = [_]Particle{undefined} ** count;
+    const rangeMin = lib.fti(wall.walls[0].start.x + 15);
+    const rangeMax = lib.fti((wall.walls[0].end.x - wall.walls[0].start.x) - 15);
     for (0..count) |i| {
         particles[i] = Particle{
-            .robot = Robot.Robot{
+            .robot = bot.Robot{
                 .center = rl.Vector2{
-                    .x = utils.itf(rand.intRangeAtMost(i32, Field.field.x + 15, Field.field.x + Field.field.width - 15)),
-                    .y = utils.itf(rand.intRangeAtMost(i32, Field.field.x + 15, Field.field.x + Field.field.width - 15)),
+                    .x = utils.itf(rand.intRangeAtMost(i32, rangeMin, rangeMax)),
+                    .y = utils.itf(rand.intRangeAtMost(i32, rangeMin, rangeMax)),
                 },
                 .radius = 10,
                 .color = rl.Color.green,
@@ -51,7 +53,7 @@ const Probability = struct {
 const sdev = 5;
 
 /// Re-samples the particles and moves them accordingly
-pub fn resample(particles: []Particle, comptime PARTICLE_COUNT: i32, normal: zprob.Normal(f32), uniformDist: zprob.Uniform(f32), robot: *Robot.Robot) rl.Vector2 {
+pub fn resample(particles: []Particle, comptime PARTICLE_COUNT: i32, normal: zprob.Normal(f32), uniformDist: zprob.Uniform(f32), robot: *bot.Robot) rl.Vector2 {
     var probabilities = [_]Probability{undefined} ** PARTICLE_COUNT;
 
     const rdT = robot.distanceFromSide(0, uniformDist, false);
@@ -71,14 +73,16 @@ pub fn resample(particles: []Particle, comptime PARTICLE_COUNT: i32, normal: zpr
         weight += -(dB * dB) / (2.0 * sdev * sdev);
         weight += -(dL * dL) / (2.0 * sdev * sdev);
         weight += -4 * (std.math.log(f32, std.math.e, (std.math.sqrt(2.0 * std.math.pi) * sdev)));
+        weight = std.math.pow(f32, std.math.e, weight);
 
-        _ = normal;
+        _ = normal; // Needed for compiler
         // const probT = normal.pdf(rdT, dT, sdev) catch 0.0;
         // const probR = normal.pdf(rdR, dR, sdev) catch 0.0;
         // const probB = normal.pdf(rdB, dB, sdev) catch 0.0;
         // const probL = normal.pdf(rdL, dL, sdev) catch 0.0;
+        // const weight = probT * probR * probB * probL;
         probabilities[i] = Probability{
-            .prob = std.math.pow(f32, std.math.e, weight),
+            .prob = weight,
             .position = particle.robot.center,
         };
     }
@@ -114,10 +118,6 @@ pub fn resample(particles: []Particle, comptime PARTICLE_COUNT: i32, normal: zpr
     for (0..i) |j| {
         const count: u64 = lib.ftu(@trunc(@as(f64, probabilities[j].prob) * PARTICLE_COUNT));
         for (0..count) |k| {
-            if (k == PARTICLE_COUNT) {
-                std.debug.print("Overflow??{d:.2}\n", .{probabilities[j].prob});
-                break;
-            }
             particles[k].robot.center = probabilities[j].position;
         }
     }

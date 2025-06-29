@@ -28,6 +28,7 @@ pub fn main() !void {
     var randD = prngD.random();
     const normal = zprob.Normal(f32).init(&randD);
     const uniformDist = zprob.Uniform(f32).init(&randD);
+    _, _ = .{ normal, uniformDist };
     // Initialize window and OpenGL context; Also defer closing both
     rl.initWindow(1350, 700, "MCL Simulation");
     rl.setTargetFPS(30);
@@ -71,7 +72,10 @@ pub fn main() !void {
         }
 
         // Draw field & robots
-        rl.drawRectangleLinesEx(lib.field.field, 5.0, rl.Color.black);
+        for (0..lib.walls.len) |i| {
+            const wall = lib.walls[i];
+            rl.drawLineEx(wall.start, wall.end, wall.width, rl.Color.black);
+        }
         rl.drawCircleV(robot.center, robot.radius, robot.color);
         rl.drawCircleV(robotAcc.center, robotAcc.radius, robotAcc.color);
         rl.drawCircleV(mclEst, robot.radius, rl.Color.pink);
