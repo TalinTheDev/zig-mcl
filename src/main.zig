@@ -5,6 +5,7 @@
 const lib = @import("zig_mcl_lib");
 const rl = @import("raylib");
 const std = @import("std");
+const zprob = @import("zprob");
 
 // Global Variables
 var font: rl.Font = undefined;
@@ -21,6 +22,11 @@ pub fn main() !void {
     var rand = &random;
     _ = &rand;
 
+    // Setup distribution generator
+    const seed: u64 = @intCast(std.time.microTimestamp());
+    var prngD = std.Random.DefaultPrng.init(seed);
+    var randD = prngD.random();
+    const normal = zprob.Normal(f32).init(&randD);
     // Initialize window and OpenGL context; Also defer closing both
     rl.initWindow(1350, 700, "MCL Simulation");
     rl.setTargetFPS(10);
@@ -41,7 +47,7 @@ pub fn main() !void {
     var robotAcc = lib.Robot{ .center = rl.Vector2{ .x = 345, .y = 345 }, .color = rl.Color.blue };
 
     // Define the particles
-    const PARTICLE_COUNT = 500;
+    const PARTICLE_COUNT = 2;
     var particles = lib.initParticles(PARTICLE_COUNT, rand);
 
     // While window should stay open...
@@ -52,6 +58,7 @@ pub fn main() !void {
         robot.update(rand, true); // Estimated robot uses exact movement
         robotAcc.update(rand, false); // Actual robot uses random movement
         lib.updateParticles(particles[0..], rand);
+        lib.resample(particles[0..], PARTICLE_COUNT, normal, &robot);
 
         // Begin drawing and clear screen
         rl.beginDrawing();
