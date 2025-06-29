@@ -30,7 +30,7 @@ pub fn main() !void {
     const uniformDist = zprob.Uniform(f32).init(&randD);
     // Initialize window and OpenGL context; Also defer closing both
     rl.initWindow(1350, 700, "MCL Simulation");
-    rl.setTargetFPS(60);
+    rl.setTargetFPS(30);
 
     defer rl.closeWindow();
 
@@ -78,15 +78,23 @@ pub fn main() !void {
 
         // Draw debug text
         drawText("%d FPS", .{rl.getFPS()}, 700, 50, rl.Color.red);
-        drawText("Actual Robot", .{}, 700, 100, rl.Color.blue);
-        drawText("Estimated Robot", .{}, 700, 125, rl.Color.orange);
-        drawText("Simulated Robot", .{}, 700, 150, rl.Color.green);
-        drawText("MCL Estimated Robot", .{}, 700, 175, rl.Color.pink);
+        drawText("Actual (movement includes error) Robot", .{}, 700, 100, rl.Color.blue);
+        drawText("Estimated (perfect movement) Robot", .{}, 700, 125, rl.Color.orange);
+        drawText("Simulated (particles) Robot", .{}, 700, 150, rl.Color.green);
+        drawText("MCL Estimated (position as given by MCL) Robot", .{}, 700, 175, rl.Color.pink);
 
-        drawText("Robot Estimated Position: (%.2f, %.2f)", .{ robot.center.x, robot.center.y }, 700, 225, rl.Color.black);
-        drawText("Robot Actual Position: (%.2f, %.2f)", .{ robotAcc.center.x, robotAcc.center.y }, 700, 250, rl.Color.black);
+        drawText("Robot Actual Position: (%.2f, %.2f)", .{ robotAcc.center.x, robotAcc.center.y }, 700, 225, rl.Color.black);
+        drawText("Robot Estimated Position: (%.2f, %.2f)", .{ robot.center.x, robot.center.y }, 700, 250, rl.Color.black);
+        drawText("Robot MCL Estimated Position: (%.2f, %.2f)", .{ mclEst.x, mclEst.y }, 700, 275, rl.Color.black);
 
-        drawText("Particle Count: %d", .{particles.len}, 700, 300, rl.Color.black);
+        drawText("Particle Count: %d", .{particles.len}, 700, 325, rl.Color.black);
+
+        drawText("MCL Simulation (by @TalinTheDev)", .{}, 700, 400, rl.Color.black);
+        drawText("Currently:", .{}, 700, 425, rl.Color.black);
+        drawText("- Only uses lateral movement", .{}, 725, 450, rl.Color.black);
+        drawText("- No on-field obstacles,", .{}, 725, 475, rl.Color.black);
+        drawText("everything is based off of the field walls", .{}, 725 + rl.measureTextEx(font, "- ", 28, 1.0).x, 500, rl.Color.black);
+
         // End drawing
         rl.endDrawing();
     }
