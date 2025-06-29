@@ -3,10 +3,10 @@
 A MCL simulation implementation in Zig using Raylib.
 
 To Do:
-[ ] Add headings to robots/particles (circles -> rectangles)
-[ ] Add obstacles
-[ ] Make sensors use ray tracing to nearest wall
-[ ] Reorganize the types:
+- [ ] Add headings to robots/particles (circles -> rectangles)
+- [ ] Add obstacles
+- [ ] Make sensors use ray tracing to nearest wall
+- [ ] Reorganize the types:
 ```zig
 Robot {
     .rec: rl.Rectangle,
