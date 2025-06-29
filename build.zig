@@ -52,6 +52,15 @@ pub fn build(b: *std.Build) void {
     lib.root_module.addImport("raylib", raylib);
     lib.root_module.addImport("raygui", raygui);
 
+    const zprob_dep = b.dependency("zprob", .{
+        .target = target,
+        .optimize = optimize,
+    });
+
+    const zprob_module = zprob_dep.module("zprob");
+    exe.root_module.addImport("zprob", zprob_module);
+    lib.root_module.addImport("zprob", zprob_module);
+
     b.installDirectory(.{
         .source_dir = .{ .cwd_relative = "assets" },
         .install_dir = .bin,

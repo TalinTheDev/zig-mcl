@@ -10,6 +10,10 @@
             .url = "git+https://github.com/Not-Nik/raylib-zig?ref=devel#3bf08a304cfe2baf839705063ff999b8d8bc8c54",
             .hash = "raylib_zig-5.6.0-dev-KE8REKAqBQAQugfCOjYYVRFOi7iaEJK1EMDcRUq8AOm2",
         },
+        .zprob = .{
+            .url = "git+https://github.com/pblischak/zprob/#4a68c6d90ee88cec52e6546152a78daff0981c17",
+            .hash = "zprob-0.3.0-Nr0KC05sAgA-JdDr0lFabtdIyYpTOyNMFQVr2HxrebKa",
+        },
     },
     .paths = .{
         "build.zig",
