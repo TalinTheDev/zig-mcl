@@ -12,8 +12,8 @@ const zprob = @import("zprob");
 pub const Robot = struct {
     center: rl.Vector2,
     sCenter: rl.Vector2 = rl.Vector2{ .x = 0, .y = 0 },
-    radius: f32 = 10,
-    heading: f32 = 0,
+    radius: f32 = 100,
+    heading: f32 = -90,
     viewDistance: f32 = 500,
     color: rl.Color = rl.Color.orange,
 
@@ -49,20 +49,20 @@ pub const Robot = struct {
 
     pub fn drawRay(self: *Robot) void {
         const rayStart = rl.Vector2{
-            .x = self.sCenter.x + ((self.radius / 4) * @sin(std.math.degreesToRadians(self.heading - 90))),
-            .y = self.sCenter.y + ((self.radius / 4) * @cos(std.math.degreesToRadians(self.heading + 90))),
+            .x = self.sCenter.x + ((self.radius / 4) * @cos(std.math.degreesToRadians(self.heading))),
+            .y = self.sCenter.y + ((self.radius / 4) * @sin(std.math.degreesToRadians(self.heading))),
         };
         const rayEnd = rl.Vector2{
-            .x = rayStart.x + self.viewDistance * @cos(std.math.degreesToRadians(self.heading - 90)),
-            .y = rayStart.y + self.viewDistance * @sin(std.math.degreesToRadians(self.heading - 90)),
+            .x = rayStart.x + self.viewDistance * @cos(std.math.degreesToRadians(self.heading)),
+            .y = rayStart.y + self.viewDistance * @sin(std.math.degreesToRadians(self.heading)),
         };
-        rl.drawLineEx(rayStart, rayEnd, 2, rl.Color.yellow);
+        rl.drawLineEx(rayStart, rayEnd, 4, rl.Color.brown);
     }
 
     pub fn updateAfterRotation(self: *Robot) void {
         self.sCenter = rl.Vector2{
-            .x = self.center.x + ((self.radius / 2) * @cos(std.math.degreesToRadians(self.heading - 90))),
-            .y = self.center.y + ((self.radius / 2) * @sin(std.math.degreesToRadians(self.heading - 90))),
+            .x = self.center.x + ((self.radius / 2) * @cos(std.math.degreesToRadians(self.heading))),
+            .y = self.center.y + ((self.radius / 2) * @sin(std.math.degreesToRadians(self.heading))),
         };
     }
 

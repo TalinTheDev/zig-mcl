@@ -68,13 +68,13 @@ pub fn main() !void {
         rl.clearBackground(rl.Color.white);
 
         // Draw particles
-        for (particles[0..PARTICLE_COUNT]) |*particle| {
-            particle.robot.draw();
-        }
+        // for (particles[0..PARTICLE_COUNT]) |*particle| {
+        //     particle.robot.draw();
+        // }
         robot.draw();
-        robotAcc.draw();
+        // robotAcc.draw();
         mclBot.updateAfterRotation();
-        mclBot.draw();
+        // mclBot.draw();
 
         // Draw field & robots
         for (0..lib.walls.len) |i| {
