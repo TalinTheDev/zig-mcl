@@ -20,10 +20,10 @@ pub const Particle = struct {
 /// within the field's boundaries
 pub fn initParticles(comptime count: i32, rand: *std.Random) [count]Particle {
     var particles = [_]Particle{undefined} ** count;
-    const rangeMin = lib.fti(wall.walls[0].start.x + 15);
-    const rangeMax = lib.fti((wall.walls[0].end.x - wall.walls[0].start.x) - 15);
+    const rangeMin = lib.fti(wall.walls[0].start.x + 20);
+    const rangeMax = lib.fti((wall.walls[0].end.x - wall.walls[0].start.x) - 20);
     for (0..count) |i| {
-        particles[i] = Particle{
+        var particle = Particle{
             .robot = bot.Robot{
                 .center = rl.Vector2{
                     .x = utils.itf(rand.intRangeAtMost(i32, rangeMin, rangeMax)),
@@ -33,6 +33,13 @@ pub fn initParticles(comptime count: i32, rand: *std.Random) [count]Particle {
             },
             .id = i,
         };
+        while (!particle.robot.checkCollision()) {
+            particle.robot.center = rl.Vector2{
+                .x = utils.itf(rand.intRangeAtMost(i32, rangeMin, rangeMax)),
+                .y = utils.itf(rand.intRangeAtMost(i32, rangeMin, rangeMax)),
+            };
+        }
+        particles[i] = particle;
     }
     return particles;
 }

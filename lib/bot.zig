@@ -11,14 +11,14 @@ const zprob = @import("zprob");
 /// Robot
 pub const Robot = struct {
     center: rl.Vector2,
-    start: rl.Vector2 = rl.Vector2{ .x = 0, .y = 0 },
-    end: rl.Vector2 = rl.Vector2{ .x = 0, .y = 0 },
-    length: f32 = 40,
+    sCenter: rl.Vector2 = rl.Vector2{ .x = 0, .y = 0 },
+    radius: f32 = 10,
     heading: f32 = 0,
     color: rl.Color = rl.Color.orange,
 
     pub fn draw(self: *Robot) void {
-        rl.drawLineEx(self.start, self.end, 5, self.color);
+        rl.drawCircleV(self.center, self.radius, self.color);
+        rl.drawCircleV(self.sCenter, self.radius / 4, rl.Color.black);
     }
 
     pub fn distanceFromSide(self: *Robot, sideNum: usize, rand: zprob.Uniform(f32), exact: bool) f32 {
@@ -46,20 +46,16 @@ pub const Robot = struct {
     }
 
     pub fn updateAfterRotation(self: *Robot) void {
-        self.start = rl.Vector2{
-            .x = self.center.x - ((self.length / 2 * @sin(std.math.degreesToRadians(self.heading)))),
-            .y = self.center.y - ((self.length / 2 * @cos(std.math.degreesToRadians(self.heading)))),
-        };
-        self.end = rl.Vector2{
-            .x = self.center.x + ((self.length / 2 * @sin(std.math.degreesToRadians(self.heading)))),
-            .y = self.center.y + ((self.length / 2 * @cos(std.math.degreesToRadians(self.heading)))),
+        self.sCenter = rl.Vector2{
+            .x = self.center.x + ((self.radius / 2) * @cos(std.math.degreesToRadians(self.heading - 90))),
+            .y = self.center.y + ((self.radius / 2) * @sin(std.math.degreesToRadians(self.heading - 90))),
         };
     }
 
     /// Handles movement for a robot
     pub fn update(self: *Robot, rand: *std.Random, exact: bool) void {
         const diff = if (!exact) lib.itf(rand.intRangeAtMost(i32, 0, 4)) else 2;
-        const diffA = if (!exact) lib.itf(rand.intRangeAtMost(i32, 0, 5)) else 2.5;
+        const diffA = if (!exact) lib.itf(rand.intRangeAtMost(i32, 0, 10)) else 5;
         const preMoveY = self.center.y;
         const preMoveX = self.center.x;
         if (rl.isKeyDown(rl.KeyboardKey.w)) {
@@ -76,35 +72,28 @@ pub const Robot = struct {
         }
 
         if (rl.isKeyDown(rl.KeyboardKey.left)) {
-            self.heading += diffA;
-        }
-        if (rl.isKeyDown(rl.KeyboardKey.right)) {
             self.heading -= diffA;
         }
+        if (rl.isKeyDown(rl.KeyboardKey.right)) {
+            self.heading += diffA;
+        }
         self.updateAfterRotation();
-        // Check field wall collisions
+        if (!self.checkCollision()) {
+            self.center.x = preMoveX;
+            self.center.y = preMoveY;
+        }
+        self.updateAfterRotation();
+    }
+
+    /// Check wall collisions
+    pub fn checkCollision(self: *Robot) bool {
         for (0..lib.walls.len) |i| {
             const wallToCheck = lib.wall.walls[i];
 
-            var dist = rl.Vector2{ .x = 0, .y = 0 };
-            if (rl.checkCollisionLines(wallToCheck.start, wallToCheck.end, self.center, self.end, &dist)) {
-                self.center.x = preMoveX;
-                self.center.y = preMoveY;
-            } else {
-                const heading = self.heading + 45;
-                const start = rl.Vector2{
-                    .x = self.center.x - ((self.length / 2 * @sin(std.math.degreesToRadians(heading)))),
-                    .y = self.center.y - ((self.length / 2 * @cos(std.math.degreesToRadians(heading)))),
-                };
-                const end = rl.Vector2{
-                    .x = self.center.x + ((self.length / 2 * @sin(std.math.degreesToRadians(heading)))),
-                    .y = self.center.y + ((self.length / 2 * @cos(std.math.degreesToRadians(heading)))),
-                };
-                if (rl.checkCollisionLines(wallToCheck.start, wallToCheck.end, start, end, &dist)) {
-                    self.center.x = wallToCheck.start.x;
-                }
+            if (rl.checkCollisionCircleLine(self.center, self.radius, wallToCheck.start, wallToCheck.end)) {
+                return false;
             }
-            self.updateAfterRotation();
         }
+        return true;
     }
 };
