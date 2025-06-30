@@ -20,7 +20,7 @@ pub const Robot = struct {
     pub fn draw(self: *Robot) void {
         rl.drawCircleV(self.center, self.radius, self.color);
         rl.drawCircleV(self.sCenter, self.radius / 4, rl.Color.black);
-        self.drawRay();
+        _ = self.castRays();
     }
 
     pub fn distanceFromSide(self: *Robot, sideNum: usize, rand: zprob.Uniform(f32), exact: bool) f32 {
@@ -47,7 +47,8 @@ pub const Robot = struct {
         // return (self.center.y - side.start.y) * diff + radius;
     }
 
-    pub fn drawRay(self: *Robot) void {
+    pub const Ray = struct { start: rl.Vector2, end: rl.Vector2 };
+    pub fn castRays(self: *Robot) [4]Ray {
         // -90 Deg Ray
         const rayStart90 = rl.Vector2{
             .x = self.sCenter.x + ((self.radius / 4) * @cos(std.math.degreesToRadians(self.heading))),
@@ -57,7 +58,6 @@ pub const Robot = struct {
             .x = rayStart90.x + self.viewDistance * @cos(std.math.degreesToRadians(self.heading)),
             .y = rayStart90.y + self.viewDistance * @sin(std.math.degreesToRadians(self.heading)),
         };
-        rl.drawLineEx(rayStart90, rayEnd90, 4, rl.Color.brown);
 
         // -270 Deg Ray
         const rayStart270 = rl.Vector2{
@@ -68,7 +68,6 @@ pub const Robot = struct {
             .x = rayStart270.x + self.viewDistance * @cos(std.math.degreesToRadians(self.heading - 180)),
             .y = rayStart270.y + self.viewDistance * @sin(std.math.degreesToRadians(self.heading - 180)),
         };
-        rl.drawLineEx(rayStart270, rayEnd270, 4, rl.Color.brown);
 
         // 0 Deg Ray
         const rayStart0 = rl.Vector2{
@@ -79,7 +78,6 @@ pub const Robot = struct {
             .x = rayStart0.x + self.viewDistance * @cos(std.math.degreesToRadians(self.heading + 90)),
             .y = rayStart0.y + self.viewDistance * @sin(std.math.degreesToRadians(self.heading + 90)),
         };
-        rl.drawLineEx(rayStart0, rayEnd0, 4, rl.Color.brown);
 
         // -180 Deg Ray
         const rayStart180 = rl.Vector2{
@@ -90,7 +88,12 @@ pub const Robot = struct {
             .x = rayStart180.x + self.viewDistance * @cos(std.math.degreesToRadians(self.heading - 90)),
             .y = rayStart180.y + self.viewDistance * @sin(std.math.degreesToRadians(self.heading - 90)),
         };
-        rl.drawLineEx(rayStart180, rayEnd180, 4, rl.Color.brown);
+        return [_]Ray{
+            Ray{ .start = rayStart90, .end = rayEnd90 },
+            Ray{ .start = rayStart270, .end = rayEnd270 },
+            Ray{ .start = rayStart0, .end = rayEnd0 },
+            Ray{ .start = rayStart180, .end = rayEnd180 },
+        };
     }
 
     pub fn updateAfterRotation(self: *Robot) void {
