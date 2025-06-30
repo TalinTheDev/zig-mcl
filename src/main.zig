@@ -50,7 +50,7 @@ pub fn main() !void {
     var robotAcc = lib.Robot{ .center = CENTER, .color = rl.Color.blue };
     var mclBot = lib.Robot{ .center = CENTER, .color = rl.Color.pink };
     // Define the particles
-    const PARTICLE_COUNT = 1;
+    const PARTICLE_COUNT = 1000;
     var particles = lib.initParticles(PARTICLE_COUNT, rand);
     // While window should stay open...
     while (!rl.windowShouldClose()) {
@@ -68,13 +68,13 @@ pub fn main() !void {
         rl.clearBackground(rl.Color.white);
 
         // Draw particles
-        // for (particles[0..PARTICLE_COUNT]) |*particle| {
-        //     particle.robot.draw();
-        // }
+        for (particles[0..PARTICLE_COUNT]) |*particle| {
+            particle.robot.draw();
+        }
         robot.draw();
-        // robotAcc.draw();
+        robotAcc.draw();
         mclBot.updateAfterRotation();
-        // mclBot.draw();
+        mclBot.draw();
 
         // Draw field & robots
         for (0..lib.walls.len) |i| {
