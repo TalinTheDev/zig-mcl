@@ -23,9 +23,37 @@ pub const Robot = struct {
         _ = self.castRays();
     }
 
-    pub fn distanceFromSide(self: *Robot, sideNum: usize, rand: zprob.Uniform(f32), exact: bool) f32 {
-        _ = .{ self, sideNum, rand, exact };
-        return 0.0;
+    /// Returns an array of four floats representing the closest distance
+    /// detected by each ray cast from each direction of the robot
+    // Just trust the math bro, idek
+    pub fn distanceToClosestSide(self: *Robot, rand: zprob.Uniform(f32), exact: bool) [4]f32 {
+        const diff = if (!exact) rand.sample(-4, 4) else 0;
+
+        const rays = self.castRays();
+        var dists: [rays.len]f32 = undefined;
+        for (rays, 0..) |ray, i| {
+            var closestDist: f32 = std.math.floatMin(f32);
+            for (lib.walls) |wallToCheck| {
+                const d = (ray.start.x - ray.end.x) * (wallToCheck.start.y - wallToCheck.end.y) - (ray.start.y - ray.end.y) * (wallToCheck.start.x - wallToCheck.end.x);
+
+                if (d == 0) {
+                    continue;
+                }
+                const t = ((ray.start.x - wallToCheck.start.x) * (wallToCheck.start.y - wallToCheck.end.y) - (ray.start.y - wallToCheck.start.y) * (wallToCheck.start.x - wallToCheck.end.x)) / d;
+
+                // const u = ((ray.start.x - wallToCheck.start.x) * (ray.start.y - ray.end.y) - (ray.start.y - wallToCheck.start.y) * (ray.start.x - ray.end.y)) / d;
+
+                const x = (ray.start.x + t * (ray.end.x - ray.start.x));
+                const y = (ray.start.y + t * (ray.end.y - ray.start.y));
+
+                const dist = std.math.sqrt((std.math.pow(f32, (x - ray.start.x), 2) + std.math.pow(f32, (y - ray.start.y), 2))) + diff;
+                if (dist < closestDist) {
+                    closestDist = dist;
+                }
+            }
+            dists[i] = closestDist;
+        }
+        return dists;
     }
 
     pub const Ray = struct { start: rl.Vector2, end: rl.Vector2 };

@@ -56,37 +56,39 @@ const Probability = struct {
     position: rl.Vector2,
 };
 
-const sdev = 5;
+const sdev = 0.001;
 
 /// Re-samples the particles and moves them accordingly
-pub fn resample(particles: []Particle, comptime PARTICLE_COUNT: i32, normal: zprob.Normal(f32), uniformDist: zprob.Uniform(f32), robot: *bot.Robot) rl.Vector2 {
+pub fn resample(particles: []Particle, comptime PARTICLE_COUNT: i32, normal: zprob.Normal(f32), uniformDist: zprob.Uniform(f32), robot: *bot.Robot) bot.Robot {
     var probabilities = [_]Probability{undefined} ** PARTICLE_COUNT;
 
-    const rdT = robot.distanceFromSide(0, uniformDist, false);
-    const rdR = robot.distanceFromSide(1, uniformDist, false);
-    const rdB = robot.distanceFromSide(2, uniformDist, false);
-    const rdL = robot.distanceFromSide(3, uniformDist, false);
+    const robotDist = robot.distanceToClosestSide(uniformDist, false);
+    const rdT = robotDist[0];
+    const rdR = robotDist[1];
+    const rdB = robotDist[2];
+    const rdL = robotDist[3];
 
     for (particles, 0..) |*particle, i| {
-        const dT = rdT - particle.robot.distanceFromSide(0, uniformDist, true);
-        const dR = rdR - particle.robot.distanceFromSide(1, uniformDist, true);
-        const dB = rdB - particle.robot.distanceFromSide(2, uniformDist, true);
-        const dL = rdL - particle.robot.distanceFromSide(3, uniformDist, true);
+        const particleDist = particle.robot.distanceToClosestSide(uniformDist, false);
+        const dT = particleDist[0];
+        const dR = particleDist[1];
+        const dB = particleDist[2];
+        const dL = particleDist[3];
 
-        var weight: f32 = 0.0;
-        weight += -(dT * dT) / (2.0 * sdev * sdev);
-        weight += -(dR * dR) / (2.0 * sdev * sdev);
-        weight += -(dB * dB) / (2.0 * sdev * sdev);
-        weight += -(dL * dL) / (2.0 * sdev * sdev);
-        weight += -4 * (std.math.log(f32, std.math.e, (std.math.sqrt(2.0 * std.math.pi) * sdev)));
-        weight = std.math.pow(f32, std.math.e, weight);
+        // var weight: f32 = 0.0;
+        // weight += -(dT * dT) / (2.0 * sdev * sdev);
+        // weight += -(dR * dR) / (2.0 * sdev * sdev);
+        // weight += -(dB * dB) / (2.0 * sdev * sdev);
+        // weight += -(dL * dL) / (2.0 * sdev * sdev);
+        // weight += -4 * (std.math.log(f32, std.math.e, (std.math.sqrt(2.0 * std.math.pi) * sdev)));
+        // weight = std.math.pow(f32, std.math.e, weight);
 
-        _ = normal; // Needed for compiler
-        // const probT = normal.pdf(rdT, dT, sdev) catch 0.0;
-        // const probR = normal.pdf(rdR, dR, sdev) catch 0.0;
-        // const probB = normal.pdf(rdB, dB, sdev) catch 0.0;
-        // const probL = normal.pdf(rdL, dL, sdev) catch 0.0;
-        // const weight = probT * probR * probB * probL;
+        // _ = normal; // Needed for compiler
+        const probT = normal.pdf(rdT, dT, sdev) catch 0.0;
+        const probR = normal.pdf(rdR, dR, sdev) catch 0.0;
+        const probB = normal.pdf(rdB, dB, sdev) catch 0.0;
+        const probL = normal.pdf(rdL, dL, sdev) catch 0.0;
+        const weight = probT * probR * probB * probL;
         probabilities[i] = Probability{
             .prob = weight,
             .position = particle.robot.center,
@@ -130,14 +132,21 @@ pub fn resample(particles: []Particle, comptime PARTICLE_COUNT: i32, normal: zpr
 
     var avgX: f32 = 0;
     var avgY: f32 = 0;
+    var avgHeading: f32 = 0;
 
     for (particles) |particle| {
         avgX += particle.robot.center.x;
         avgY += particle.robot.center.y;
+        avgHeading += particle.robot.heading;
     }
     avgX /= PARTICLE_COUNT;
     avgY /= PARTICLE_COUNT;
-    return rl.Vector2{ .x = avgX, .y = avgY };
+    avgHeading /= PARTICLE_COUNT;
+    const mclBot = bot.Robot{ .center = rl.Vector2{
+        .x = avgX,
+        .y = avgY,
+    }, .heading = avgHeading, .color = rl.Color.pink };
+    return mclBot;
 }
 
 fn sortProbabilities() fn (void, Probability, Probability) bool {

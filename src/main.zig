@@ -45,7 +45,7 @@ pub fn main() !void {
     defer rl.unloadFont(font);
 
     // Define the robots
-    const CENTER = rl.Vector2{ .x = 345, .y = 345 };
+    const CENTER = rl.Vector2{ .x = 100, .y = 100 };
     var robot = lib.Robot{ .center = CENTER };
     var robotAcc = lib.Robot{ .center = CENTER, .color = rl.Color.blue };
     var mclBot = lib.Robot{ .center = CENTER, .color = rl.Color.pink };
@@ -60,8 +60,7 @@ pub fn main() !void {
         robot.update(rand, true); // Estimated robot uses exact movement
         robotAcc.update(rand, false); // Actual robot uses random movement
         lib.updateParticles(particles[0..], rand);
-        const mclEst = lib.resample(particles[0..], PARTICLE_COUNT, normal, uniformDist, &robot);
-        mclBot = lib.Robot{ .center = mclEst, .color = rl.Color.pink };
+        mclBot = lib.resample(particles[0..], PARTICLE_COUNT, normal, uniformDist, &robot);
 
         // Begin drawing and clear screen
         rl.beginDrawing();
@@ -91,13 +90,13 @@ pub fn main() !void {
 
         drawText("Robot Actual Position: (%.2f, %.2f)", .{ robotAcc.center.x, robotAcc.center.y }, 700, 225, rl.Color.black);
         drawText("Robot Estimated Position: (%.2f, %.2f)", .{ robot.center.x, robot.center.y }, 700, 250, rl.Color.black);
-        drawText("Robot MCL Estimated Position: (%.2f, %.2f)", .{ mclEst.x, mclEst.y }, 700, 275, rl.Color.black);
+        drawText("Robot MCL Estimated Position: (%.2f, %.2f)", .{ mclBot.center.x, mclBot.center.y }, 700, 275, rl.Color.black);
 
         drawText("Particle Count: %d", .{particles.len}, 700, 325, rl.Color.black);
 
         drawText("MCL Simulation (by @TalinTheDev)", .{}, 700, 400, rl.Color.black);
         drawText("Currently:", .{}, 700, 425, rl.Color.black);
-        drawText("- Doesn't do MCL now that I added in headings", .{}, 725, 450, rl.Color.black);
+        drawText("- Badly does MCL now that I added in headings", .{}, 725, 450, rl.Color.black);
 
         // End drawing
         rl.endDrawing();
