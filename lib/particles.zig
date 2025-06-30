@@ -29,7 +29,6 @@ pub fn initParticles(comptime count: i32, rand: *std.Random) [count]Particle {
                     .x = utils.itf(rand.intRangeAtMost(i32, rangeMin, rangeMax)),
                     .y = utils.itf(rand.intRangeAtMost(i32, rangeMin, rangeMax)),
                 },
-                .radius = 10,
                 .color = rl.Color.green,
             },
             .id = i,

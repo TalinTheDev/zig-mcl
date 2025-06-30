@@ -45,9 +45,10 @@ pub fn main() !void {
     defer rl.unloadFont(font);
 
     // Define the robots
-    var robot = lib.Robot{ .center = rl.Vector2{ .x = 345, .y = 345 } };
-    var robotAcc = lib.Robot{ .center = rl.Vector2{ .x = 345, .y = 345 }, .color = rl.Color.blue };
-
+    const CENTER = rl.Vector2{ .x = 345, .y = 345 };
+    var robot = lib.Robot{ .center = CENTER };
+    var robotAcc = lib.Robot{ .center = CENTER, .color = rl.Color.blue };
+    var mclBot = lib.Robot{ .center = CENTER, .color = rl.Color.pink };
     // Define the particles
     const PARTICLE_COUNT = 1000;
     var particles = lib.initParticles(PARTICLE_COUNT, rand);
@@ -60,24 +61,26 @@ pub fn main() !void {
         robotAcc.update(rand, false); // Actual robot uses random movement
         lib.updateParticles(particles[0..], rand);
         const mclEst = lib.resample(particles[0..], PARTICLE_COUNT, normal, uniformDist, &robot);
+        mclBot = lib.Robot{ .center = mclEst, .color = rl.Color.pink };
 
         // Begin drawing and clear screen
         rl.beginDrawing();
         rl.clearBackground(rl.Color.white);
 
         // Draw particles
-        for (particles[0..PARTICLE_COUNT]) |particle| {
-            rl.drawCircleV(particle.robot.center, particle.robot.radius, particle.robot.color);
+        for (particles[0..PARTICLE_COUNT]) |*particle| {
+            particle.robot.draw();
         }
+        robot.draw();
+        robotAcc.draw();
+        mclBot.updateAfterRotation();
+        mclBot.draw();
 
         // Draw field & robots
         for (0..lib.walls.len) |i| {
             const wall = lib.walls[i];
             rl.drawLineEx(wall.start, wall.end, wall.width, rl.Color.black);
         }
-        rl.drawCircleV(robot.center, robot.radius, robot.color);
-        rl.drawCircleV(robotAcc.center, robotAcc.radius, robotAcc.color);
-        rl.drawCircleV(mclEst, robot.radius, rl.Color.pink);
 
         // Draw debug text
         drawText("%d FPS", .{rl.getFPS()}, 700, 50, rl.Color.red);
