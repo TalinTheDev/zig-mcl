@@ -50,7 +50,7 @@ pub fn main() !void {
     var robotAcc = lib.Robot{ .center = CENTER, .color = rl.Color.blue };
     var mclBot = lib.Robot{ .center = CENTER, .color = rl.Color.pink };
     // Define the particles
-    const PARTICLE_COUNT = 1000;
+    const PARTICLE_COUNT = 1;
     var particles = lib.initParticles(PARTICLE_COUNT, rand);
     // While window should stay open...
     while (!rl.windowShouldClose()) {

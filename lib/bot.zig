@@ -14,11 +14,13 @@ pub const Robot = struct {
     sCenter: rl.Vector2 = rl.Vector2{ .x = 0, .y = 0 },
     radius: f32 = 10,
     heading: f32 = 0,
+    viewDistance: f32 = 500,
     color: rl.Color = rl.Color.orange,
 
     pub fn draw(self: *Robot) void {
         rl.drawCircleV(self.center, self.radius, self.color);
         rl.drawCircleV(self.sCenter, self.radius / 4, rl.Color.black);
+        self.drawRay();
     }
 
     pub fn distanceFromSide(self: *Robot, sideNum: usize, rand: zprob.Uniform(f32), exact: bool) f32 {
@@ -43,6 +45,18 @@ pub const Robot = struct {
         //     radius *= -1;
         // }
         // return (self.center.y - side.start.y) * diff + radius;
+    }
+
+    pub fn drawRay(self: *Robot) void {
+        const rayStart = rl.Vector2{
+            .x = self.sCenter.x + ((self.radius / 4) * @sin(std.math.degreesToRadians(self.heading - 90))),
+            .y = self.sCenter.y + ((self.radius / 4) * @cos(std.math.degreesToRadians(self.heading + 90))),
+        };
+        const rayEnd = rl.Vector2{
+            .x = rayStart.x + self.viewDistance * @cos(std.math.degreesToRadians(self.heading - 90)),
+            .y = rayStart.y + self.viewDistance * @sin(std.math.degreesToRadians(self.heading - 90)),
+        };
+        rl.drawLineEx(rayStart, rayEnd, 2, rl.Color.yellow);
     }
 
     pub fn updateAfterRotation(self: *Robot) void {
