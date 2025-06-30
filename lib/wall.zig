@@ -13,6 +13,8 @@ pub const Wall = struct {
 };
 
 /// The walls on the field
+// Ensure that the end vectors are greater than the start in both x and y.
+// Otherwise, wall collisions don't properly work
 var wallList = [_]Wall{
     // Field Boundary Walls
     Wall{
@@ -33,9 +35,55 @@ var wallList = [_]Wall{
     },
 
     // Obstacles
+
+    // Center
+    Wall{
+        .start = V2{ .x = 300, .y = 200 },
+        .end = V2{ .x = 500, .y = 200 },
+    },
+    Wall{
+        .start = V2{ .x = 500, .y = 200 },
+        .end = V2{ .x = 500, .y = 400 },
+    },
+    Wall{
+        .start = V2{ .x = 200, .y = 500 },
+        .end = V2{ .x = 400, .y = 500 },
+    },
+    Wall{
+        .start = V2{ .x = 200, .y = 300 },
+        .end = V2{ .x = 200, .y = 500 },
+    },
+
+    // Top Left
     Wall{
         .start = V2{ .x = 100, .y = 100 },
-        .end = V2{ .x = 100, .y = 500 },
+        .end = V2{ .x = 100, .y = 300 },
+    },
+    Wall{
+        .start = V2{ .x = 100, .y = 300 },
+        .end = V2{ .x = 150, .y = 300 },
+    },
+    Wall{
+        .start = V2{ .x = 150, .y = 300 },
+        .end = V2{ .x = 150, .y = 400 },
+    },
+
+    // Bottom Right
+    Wall{
+        .start = V2{ .x = 400, .y = 550 },
+        .end = V2{ .x = 450, .y = 550 },
+    },
+    Wall{
+        .start = V2{ .x = 450, .y = 400 },
+        .end = V2{ .x = 450, .y = 550 },
+    },
+    Wall{
+        .start = V2{ .x = 450, .y = 400 },
+        .end = V2{ .x = 550, .y = 400 },
+    },
+    Wall{
+        .start = V2{ .x = 550, .y = 350 },
+        .end = V2{ .x = 550, .y = 400 },
     },
 };
 

@@ -51,7 +51,6 @@ pub fn main() !void {
     // Define the particles
     const PARTICLE_COUNT = 1000;
     var particles = lib.initParticles(PARTICLE_COUNT, rand);
-
     // While window should stay open...
     while (!rl.windowShouldClose()) {
         // Updates
@@ -96,8 +95,6 @@ pub fn main() !void {
         drawText("MCL Simulation (by @TalinTheDev)", .{}, 700, 400, rl.Color.black);
         drawText("Currently:", .{}, 700, 425, rl.Color.black);
         drawText("- Only uses lateral movement", .{}, 725, 450, rl.Color.black);
-        drawText("- No on-field obstacles,", .{}, 725, 475, rl.Color.black);
-        drawText("everything is based off of the field walls", .{}, 725 + rl.measureTextEx(font, "- ", 28, 1.0).x, 500, rl.Color.black);
 
         // End drawing
         rl.endDrawing();

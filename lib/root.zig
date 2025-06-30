@@ -25,6 +25,7 @@ pub fn checkHorizontalCollision(robot: *bot.Robot, wallNum: usize, rightX: bool)
     if (wallNum > 3 and (robot.center.y > wallToCheck.end.y or robot.center.y < wallToCheck.start.y)) {
         return false;
     }
+
     // If bot was originally to the right of the wall
     if (rightX) {
         // Return true if the left edge of the bot is on the left of/on the
