@@ -26,25 +26,6 @@ pub const Robot = struct {
     pub fn distanceFromSide(self: *Robot, sideNum: usize, rand: zprob.Uniform(f32), exact: bool) f32 {
         _ = .{ self, sideNum, rand, exact };
         return 0.0;
-        // const diff = if (!exact) rand.sample(-2, 2) else 1;
-        // // Adding/Subtracting 15 to account for robot radius & wall thickness
-        // var radius: f32 = 12.5;
-        // const side = wall.walls[sideNum];
-        //
-        // // if the wall is vertical -> return horizontal distance;
-        // // else -> return vertical distance;
-        // if (side.end.y != side.start.y) {
-        //     // if the robot is on the right of the wall -> subtract the radius
-        //     if (self.center.x > side.start.x) {
-        //         radius *= -1;
-        //     }
-        //     return (self.center.x - side.start.x) * diff + radius;
-        // }
-        //
-        // if (self.center.y > side.start.y) {
-        //     radius *= -1;
-        // }
-        // return (self.center.y - side.start.y) * diff + radius;
     }
 
     pub const Ray = struct { start: rl.Vector2, end: rl.Vector2 };
@@ -88,6 +69,7 @@ pub const Robot = struct {
             .x = rayStart180.x + self.viewDistance * @cos(std.math.degreesToRadians(self.heading - 90)),
             .y = rayStart180.y + self.viewDistance * @sin(std.math.degreesToRadians(self.heading - 90)),
         };
+
         return [_]Ray{
             Ray{ .start = rayStart90, .end = rayEnd90 },
             Ray{ .start = rayStart270, .end = rayEnd270 },
@@ -96,6 +78,7 @@ pub const Robot = struct {
         };
     }
 
+    /// Updates the position of the small circle inside the robot
     pub fn updateAfterRotation(self: *Robot) void {
         self.sCenter = rl.Vector2{
             .x = self.center.x + ((self.radius / 2) * @cos(std.math.degreesToRadians(self.heading))),

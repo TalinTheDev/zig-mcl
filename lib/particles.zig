@@ -20,8 +20,8 @@ pub const Particle = struct {
 /// within the field's boundaries
 pub fn initParticles(comptime count: i32, rand: *std.Random) [count]Particle {
     var particles = [_]Particle{undefined} ** count;
-    const rangeMin = lib.fti(wall.walls[0].start.x + 20);
-    const rangeMax = lib.fti((wall.walls[0].end.x - wall.walls[0].start.x) - 20);
+    const rangeMin = lib.fti(wall.walls[0].start.x + 12.5);
+    const rangeMax = lib.fti(wall.walls[0].end.x - 12.5);
     for (0..count) |i| {
         var particle = Particle{
             .robot = bot.Robot{

@@ -97,7 +97,7 @@ pub fn main() !void {
 
         drawText("MCL Simulation (by @TalinTheDev)", .{}, 700, 400, rl.Color.black);
         drawText("Currently:", .{}, 700, 425, rl.Color.black);
-        drawText("- Only uses lateral movement", .{}, 725, 450, rl.Color.black);
+        drawText("- Doesn't do MCL now that I added in headings", .{}, 725, 450, rl.Color.black);
 
         // End drawing
         rl.endDrawing();
