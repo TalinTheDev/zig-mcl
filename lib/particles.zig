@@ -44,6 +44,7 @@ const Probability = struct {
 const sdev = 0.025;
 var firstRun = false;
 
+/// Returns a robot at a random position
 fn randomBotPos(uniformDist: zprob.Uniform(f32), color: rl.Color) bot.Robot {
     const rangeMin = wall.walls[0].start.x + 12.5;
     const rangeMax = wall.walls[0].end.x - 12.5;
@@ -63,6 +64,17 @@ fn randomBotPos(uniformDist: zprob.Uniform(f32), color: rl.Color) bot.Robot {
     return robot;
 }
 
+fn compute_n_eff(probs: []Probability, comptime PARTICLE_COUNT: i32) f32 {
+    var sum_sq: f32 = 0.0;
+    for (0..PARTICLE_COUNT) |p| {
+        sum_sq += std.math.pow(f32, probs[p].prob, 2);
+    }
+    if (sum_sq == 0.0) return 0.0;
+    return 1.0 / sum_sq;
+}
+
+var frames: i32 = 0;
+var resuce: i32 = 100;
 /// Re-samples the particles and moves them accordingly
 pub fn resample(particles: []Particle, comptime PARTICLE_COUNT: i32, normal: zprob.Normal(f32), uniformDist: zprob.Uniform(f32), robot: *bot.Robot) bot.Robot {
     if (!firstRun) {
@@ -149,7 +161,23 @@ pub fn resample(particles: []Particle, comptime PARTICLE_COUNT: i32, normal: zpr
         }
         prob.prob /= sumN;
     }
+    if (frames >= 30 and resuce <= 0) {
+        const n_eff = compute_n_eff(&probabilities, PARTICLE_COUNT);
 
+        if (n_eff < lib.itf(PARTICLE_COUNT) * 0.2) { // 20% of total
+            // We are overconfident — optionally inject more randoms
+            for (0..(lib.ftu(@floor(lib.itf(PARTICLE_COUNT) / 10)))) |i| {
+                particles[i].robot = randomBotPos(uniformDist, rl.Color.green);
+            }
+            // Trust
+            return randomBotPos(uniformDist, rl.Color.pink);
+        }
+        frames = 0;
+        resuce = 100;
+    } else {
+        frames += 1;
+        resuce -= 1;
+    }
     // Sort probabilities
     std.mem.sort(Probability, &probabilities, {}, comptime sortProbabilities());
 
@@ -182,9 +210,9 @@ pub fn resample(particles: []Particle, comptime PARTICLE_COUNT: i32, normal: zpr
         avgY += particle.robot.center.y;
         avgHeading += particle.robot.heading;
     }
-    avgX /= extraTotal;
-    avgY /= extraTotal;
-    avgHeading /= extraTotal;
+    avgX /= PARTICLE_COUNT;
+    avgY /= PARTICLE_COUNT;
+    avgHeading /= PARTICLE_COUNT;
     const mclBot = bot.Robot{ .center = rl.Vector2{
         .x = avgX,
         .y = avgY,
@@ -195,7 +223,7 @@ pub fn resample(particles: []Particle, comptime PARTICLE_COUNT: i32, normal: zpr
 fn sortProbabilities() fn (void, Probability, Probability) bool {
     return struct {
         pub fn inner(_: void, a: Probability, b: Probability) bool {
-            return a.prob < b.prob;
+            return a.prob > b.prob;
         }
     }.inner;
 }
