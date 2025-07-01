@@ -24,6 +24,10 @@ To move the robots around, use W/A/S/D for translational movement (x/y axis) and
 use the left/right arrow keys to turn the robots (the small black dots on the
 circle represent the front).
 
+A good run will eventually look like this (not guaranteed because of my cooked
+implementation): 
+![A screenshot of the simulation running](/latestRun.png)
+
 My simulation/implementation is far from perfect and there are many, many, many
 better alternatives to look at if you want to just blindly copy the code. But
 this was a fun challenge for me and I learned a lot while making it. Considering
