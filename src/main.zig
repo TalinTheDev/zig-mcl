@@ -45,13 +45,13 @@ pub fn main() !void {
     defer rl.unloadFont(font);
 
     // Define the robots
-    const CENTER = rl.Vector2{ .x = 100, .y = 100 };
+    const CENTER = rl.Vector2{ .x = 125, .y = 125 };
     var robot = lib.Robot{ .center = CENTER };
     var robotAcc = lib.Robot{ .center = CENTER, .color = rl.Color.blue };
     var mclBot = lib.Robot{ .center = CENTER, .color = rl.Color.pink };
     // Define the particles
     const PARTICLE_COUNT = 1000;
-    var particles = lib.initParticles(PARTICLE_COUNT, rand);
+    var particles = lib.initParticles(PARTICLE_COUNT, uniformDist);
     // While window should stay open...
     while (!rl.windowShouldClose()) {
         // Updates
@@ -59,8 +59,9 @@ pub fn main() !void {
         // Handle inputs
         robot.update(rand, true); // Estimated robot uses exact movement
         robotAcc.update(rand, false); // Actual robot uses random movement
+        robotAcc.updateKidnap(uniformDist);
         lib.updateParticles(particles[0..], rand);
-        mclBot = lib.resample(particles[0..], PARTICLE_COUNT, normal, uniformDist, &robot);
+        mclBot = lib.resample(particles[0..], PARTICLE_COUNT, normal, uniformDist, &robotAcc);
 
         // Begin drawing and clear screen
         rl.beginDrawing();

@@ -105,7 +105,26 @@ pub const Robot = struct {
             Ray{ .start = rayStart180, .end = rayEnd180 },
         };
     }
+    pub fn updateKidnap(self: *Robot, rand: zprob.Uniform(f32)) void {
+        if (rl.isKeyPressed(rl.KeyboardKey.k)) {
+            const rangeMin = wall.walls[0].start.x + 12.5;
+            const rangeMax = wall.walls[0].end.x - 12.5;
+            const posX = rand.sample(rangeMin, rangeMax);
+            const posY = rand.sample(rangeMin, rangeMax);
 
+            self.center = rl.Vector2{
+                .x = posX,
+                .y = posY,
+            };
+
+            while (!self.checkCollision()) {
+                self.center = rl.Vector2{
+                    .x = posX,
+                    .y = posY,
+                };
+            }
+        }
+    }
     /// Updates the position of the small circle inside the robot
     pub fn updateAfterRotation(self: *Robot) void {
         self.sCenter = rl.Vector2{

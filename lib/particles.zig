@@ -18,28 +18,13 @@ pub const Particle = struct {
 
 /// Returns an array of particles with their position being randomly generated
 /// within the field's boundaries
-pub fn initParticles(comptime count: i32, rand: *std.Random) [count]Particle {
+pub fn initParticles(comptime count: i32, uniformDist: zprob.Uniform(f32)) [count]Particle {
     var particles = [_]Particle{undefined} ** count;
-    const rangeMin = lib.fti(wall.walls[0].start.x + 12.5);
-    const rangeMax = lib.fti(wall.walls[0].end.x - 12.5);
     for (0..count) |i| {
-        var particle = Particle{
-            .robot = bot.Robot{
-                .center = rl.Vector2{
-                    .x = utils.itf(rand.intRangeAtMost(i32, rangeMin, rangeMax)),
-                    .y = utils.itf(rand.intRangeAtMost(i32, rangeMin, rangeMax)),
-                },
-                .color = rl.Color.green,
-            },
+        particles[i] = Particle{
+            .robot = randomBotPos(uniformDist, rl.Color.green),
             .id = i,
         };
-        while (!particle.robot.checkCollision()) {
-            particle.robot.center = rl.Vector2{
-                .x = utils.itf(rand.intRangeAtMost(i32, rangeMin, rangeMax)),
-                .y = utils.itf(rand.intRangeAtMost(i32, rangeMin, rangeMax)),
-            };
-        }
-        particles[i] = particle;
     }
     return particles;
 }
@@ -56,11 +41,40 @@ const Probability = struct {
     position: rl.Vector2,
 };
 
-const sdev = 0.001;
+const sdev = 0.025;
+var firstRun = false;
+
+fn randomBotPos(uniformDist: zprob.Uniform(f32), color: rl.Color) bot.Robot {
+    const rangeMin = wall.walls[0].start.x + 12.5;
+    const rangeMax = wall.walls[0].end.x - 12.5;
+    var robot = bot.Robot{
+        .center = rl.Vector2{
+            .x = uniformDist.sample(rangeMin, rangeMax),
+            .y = uniformDist.sample(rangeMin, rangeMax),
+        },
+        .color = color,
+    };
+    while (!robot.checkCollision()) {
+        robot.center = rl.Vector2{
+            .x = uniformDist.sample(rangeMin, rangeMax),
+            .y = uniformDist.sample(rangeMin, rangeMax),
+        };
+    }
+    return robot;
+}
 
 /// Re-samples the particles and moves them accordingly
 pub fn resample(particles: []Particle, comptime PARTICLE_COUNT: i32, normal: zprob.Normal(f32), uniformDist: zprob.Uniform(f32), robot: *bot.Robot) bot.Robot {
-    var probabilities = [_]Probability{undefined} ** PARTICLE_COUNT;
+    if (!firstRun) {
+        for (0..lib.ftu(@floor(@as(f32, @floatFromInt(particles.len)) * 0.75))) |i| {
+            particles[i].robot.center.x = 125;
+            particles[i].robot.center.y = 125;
+        }
+        firstRun = true;
+        return bot.Robot{ .center = rl.Vector2{ .x = 125, .y = 125 }, .color = rl.Color.pink };
+    }
+    const extraTotal = comptime (PARTICLE_COUNT + (lib.itf(PARTICLE_COUNT) * 0.05));
+    var probabilities = [_]Probability{undefined} ** extraTotal;
 
     const robotDist = robot.distanceToClosestSide(uniformDist, false);
     const rdT = robotDist[0];
@@ -68,6 +82,35 @@ pub fn resample(particles: []Particle, comptime PARTICLE_COUNT: i32, normal: zpr
     const rdB = robotDist[2];
     const rdL = robotDist[3];
 
+    for (0..(extraTotal - PARTICLE_COUNT)) |i| {
+        var particle = Particle{
+            .robot = randomBotPos(uniformDist, rl.Color.green),
+            .id = i,
+        };
+
+        const particleDist = particle.robot.distanceToClosestSide(uniformDist, false);
+        const dT = particleDist[0];
+        const dR = particleDist[1];
+        const dB = particleDist[2];
+        const dL = particleDist[3];
+
+        // var weight: f32 = 0.0;
+        // weight += -(dT * dT) / (2.0 * sdev * sdev);
+        // weight += -(dR * dR) / (2.0 * sdev * sdev);
+        // weight += -(dB * dB) / (2.0 * sdev * sdev);
+        // weight += -(dL * dL) / (2.0 * sdev * sdev);
+        // weight += -4 * (std.math.log(f32, std.math.e, (std.math.sqrt(2.0 * std.math.pi) * sdev)));
+        // weight = std.math.pow(f32, std.math.e, weight);
+        const probT = normal.pdf(rdT, dT, sdev) catch 0.0;
+        const probR = normal.pdf(rdR, dR, sdev) catch 0.0;
+        const probB = normal.pdf(rdB, dB, sdev) catch 0.0;
+        const probL = normal.pdf(rdL, dL, sdev) catch 0.0;
+        const weight = probT * probR * probB * probL;
+        probabilities[PARTICLE_COUNT - 1 + i] = Probability{
+            .prob = weight,
+            .position = particle.robot.center,
+        };
+    }
     for (particles, 0..) |*particle, i| {
         const particleDist = particle.robot.distanceToClosestSide(uniformDist, false);
         const dT = particleDist[0];
@@ -124,7 +167,7 @@ pub fn resample(particles: []Particle, comptime PARTICLE_COUNT: i32, normal: zpr
     // represent that percentage of the total
     // Then for each of those
     for (0..i) |j| {
-        const count: u64 = lib.ftu(@trunc(@as(f64, probabilities[j].prob) * PARTICLE_COUNT));
+        const count: u64 = lib.ftu(@min(PARTICLE_COUNT - 1, @trunc(@as(f64, probabilities[j].prob) * extraTotal)));
         for (0..count) |k| {
             particles[k].robot.center = probabilities[j].position;
         }
@@ -139,9 +182,9 @@ pub fn resample(particles: []Particle, comptime PARTICLE_COUNT: i32, normal: zpr
         avgY += particle.robot.center.y;
         avgHeading += particle.robot.heading;
     }
-    avgX /= PARTICLE_COUNT;
-    avgY /= PARTICLE_COUNT;
-    avgHeading /= PARTICLE_COUNT;
+    avgX /= extraTotal;
+    avgY /= extraTotal;
+    avgHeading /= extraTotal;
     const mclBot = bot.Robot{ .center = rl.Vector2{
         .x = avgX,
         .y = avgY,
