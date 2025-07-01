@@ -45,6 +45,10 @@ You will be disappointed.
 I started this with the goal to eventually use MCL in my VEXv5 team (765A)'s
 bot. Don't know if we will be doing that but the field is setup to somewhat
 resemble the field for the 2025-2026 game, Push Back (no parking spots though).
+I did add some other random obstacles around the field however to help with MCL
+working because (and I realize this is an issue I will face with the VEX
+implementation), the Push Back field is very symmetrical and MCL often gets
+lost.
 
 My code, by the way, is very much not optimized because I was focusing more on
 the MCL implementation and getting this working ASAP so some parts of this are
