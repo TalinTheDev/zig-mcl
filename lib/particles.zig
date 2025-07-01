@@ -41,7 +41,7 @@ const Probability = struct {
     position: rl.Vector2,
 };
 
-const sdev = 0.1;
+const sdev = 0.15;
 var firstRun = false;
 
 /// Returns a robot at a random position
@@ -173,8 +173,8 @@ pub fn resample(particles: []Particle, comptime PARTICLE_COUNT: i32, normal: zpr
             const n_eff = compute_n_eff(&probabilities, PARTICLE_COUNT);
 
             if (n_eff < lib.itf(PARTICLE_COUNT) * 0.2) { // 20% of total
-                // We are overconfident — optionally inject more randoms
-                for (0..(lib.ftu(@floor(lib.itf(PARTICLE_COUNT) / 10)))) |i| {
+                // We are overconfident
+                for (0..(lib.ftu(@floor(lib.itf(PARTICLE_COUNT) * 0.15)))) |i| {
                     particles[i].robot = randomBotPos(uniformDist, rl.Color.green);
                 }
                 // Trust
@@ -214,6 +214,7 @@ pub fn resample(particles: []Particle, comptime PARTICLE_COUNT: i32, normal: zpr
         var avgHeading: f32 = 0;
         var totalW: f32 = 0;
         for (particles) |particle| {
+            // Shouldn't really work with sorted probabilities but welp
             totalW += probabilities[particle.id].prob;
             avgX += particle.robot.center.x * probabilities[particle.id].prob;
             avgY += particle.robot.center.y * probabilities[particle.id].prob;

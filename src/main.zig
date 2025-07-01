@@ -30,13 +30,13 @@ pub fn main() !void {
     const uniformDist = zprob.Uniform(f32).init(&randD);
     _, _ = .{ normal, uniformDist };
     // Initialize window and OpenGL context; Also defer closing both
-    rl.initWindow(1350, 700, "MCL Simulation");
-    rl.setTargetFPS(30);
+    rl.initWindow(1500, 700, "MCL Simulation");
+    rl.setTargetFPS(10);
 
     defer rl.closeWindow();
 
     // Load a font or use the default; Also defer unloading it
-    font = rl.loadFont("assets/fonts/Asap-VariableFont_wdth,wght.ttf") catch f: {
+    font = rl.loadFontEx("assets/fonts/Asap-VariableFont_wdth,wght.ttf", 24, null) catch f: {
         rl.traceLog(rl.TraceLogLevel.err, "Couldn't load font...", .{});
 
         // If this breaks too, you're just cooked.
@@ -50,7 +50,7 @@ pub fn main() !void {
     var robotAcc = lib.Robot{ .center = CENTER, .color = rl.Color.blue };
     var mclBot = lib.Robot{ .center = CENTER, .color = rl.Color.pink };
     // Define the particles
-    const PARTICLE_COUNT = 1000;
+    const PARTICLE_COUNT = 2000;
     var particles = lib.initParticles(PARTICLE_COUNT, uniformDist);
     // While window should stay open...
     while (!rl.windowShouldClose()) {
@@ -83,21 +83,27 @@ pub fn main() !void {
         }
 
         // Draw debug text
-        drawText("%d FPS", .{rl.getFPS()}, 700, 50, rl.Color.red);
-        drawText("Actual (movement includes error) Robot", .{}, 700, 100, rl.Color.blue);
-        drawText("Estimated (perfect movement) Robot", .{}, 700, 125, rl.Color.orange);
-        drawText("Simulated (particles) Robot", .{}, 700, 150, rl.Color.green);
-        drawText("MCL Estimated (position as given by MCL) Robot", .{}, 700, 175, rl.Color.pink);
+        drawText("%d FPS - %.0fms Update Time", .{ rl.getFPS(), 1.0 / (if (rl.getFPS() > 0) lib.itf(rl.getFPS()) else 1.0) * 1000 }, 700, 50, rl.Color.red);
 
-        drawText("Robot Actual Position: (%.2f, %.2f)", .{ robotAcc.center.x, robotAcc.center.y }, 700, 225, rl.Color.black);
-        drawText("Robot Estimated Position: (%.2f, %.2f)", .{ robot.center.x, robot.center.y }, 700, 250, rl.Color.black);
-        drawText("Robot MCL Estimated Position: (%.2f, %.2f)", .{ mclBot.center.x, mclBot.center.y }, 700, 275, rl.Color.black);
+        drawText("Robot's Actual Position [w/ noise]:", .{}, 700, 100, rl.Color.blue);
+        drawText("(%.2f, %.2f)", .{ robotAcc.center.x, robotAcc.center.y }, 1250, 100, rl.Color.blue);
 
-        drawText("Particle Count: %d", .{particles.len}, 700, 325, rl.Color.black);
+        drawText("Robot's control tracked position [w/o noise]:", .{}, 700, 125, rl.Color.orange);
+        drawText("(%.2f, %.2f)", .{ robot.center.x, robot.center.y }, 1250, 125, rl.Color.orange);
 
-        drawText("MCL Simulation (by @TalinTheDev)", .{}, 700, 400, rl.Color.black);
-        drawText("Currently:", .{}, 700, 425, rl.Color.black);
-        drawText("- Badly does MCL now that I added in headings", .{}, 725, 450, rl.Color.black);
+        drawText("Robot's MCL Estimated Position:", .{}, 700, 150, rl.Color.pink);
+        drawText("(%.2f, %.2f)", .{ mclBot.center.x, mclBot.center.y }, 1250, 150, rl.Color.pink);
+
+        drawText("Particles", .{}, 700, 175, rl.Color.green);
+
+        drawText("Particle Count: %d", .{particles.len}, 700, 200, rl.Color.black);
+
+        drawText("MCL Simulation by @TalinTheDev", .{}, 700, 475, rl.Color.black);
+        drawText("Controls: ", .{}, 700, 520, rl.Color.black);
+        drawText("- W/A/S/D for Translational Movement: ", .{}, 700, 545, rl.Color.black);
+        drawText("- Left/Right Arrow Keys for Rotational Movement: ", .{}, 700, 570, rl.Color.black);
+        drawText("- K to Kidnap Robot (disappointing MCL results)", .{}, 700, 595, rl.Color.black);
+        drawText("- ESC to quit", .{}, 700, 620, rl.Color.black);
 
         // End drawing
         rl.endDrawing();
@@ -105,5 +111,5 @@ pub fn main() !void {
 }
 
 pub fn drawText(text: [:0]const u8, args: anytype, x: f32, y: f32, color: rl.Color) void {
-    rl.drawTextEx(font, rl.textFormat(text, args), rl.Vector2{ .x = x, .y = y }, 28, 1.0, color);
+    rl.drawTextEx(font, rl.textFormat(text, args), rl.Vector2{ .x = x, .y = y }, 24, 1.0, color);
 }

@@ -36,56 +36,56 @@ var wallList = [_]Wall{
 
     // Obstacles
 
-    // Center
-    Wall{
-        .start = V2{ .x = 300, .y = 200 },
-        .end = V2{ .x = 500, .y = 200 },
-    },
-    Wall{
-        .start = V2{ .x = 500, .y = 200 },
-        .end = V2{ .x = 500, .y = 400 },
-    },
-    Wall{
-        .start = V2{ .x = 200, .y = 500 },
-        .end = V2{ .x = 400, .y = 500 },
-    },
-    Wall{
-        .start = V2{ .x = 200, .y = 300 },
-        .end = V2{ .x = 200, .y = 500 },
-    },
-
-    // Top Left
-    Wall{
-        .start = V2{ .x = 100, .y = 100 },
-        .end = V2{ .x = 100, .y = 300 },
-    },
-    Wall{
-        .start = V2{ .x = 100, .y = 300 },
-        .end = V2{ .x = 150, .y = 300 },
-    },
-    Wall{
-        .start = V2{ .x = 150, .y = 300 },
-        .end = V2{ .x = 150, .y = 400 },
-    },
-
-    // Bottom Right
-    Wall{
-        .start = V2{ .x = 400, .y = 550 },
-        .end = V2{ .x = 450, .y = 550 },
-    },
-    Wall{
-        .start = V2{ .x = 450, .y = 400 },
-        .end = V2{ .x = 450, .y = 550 },
-    },
-    Wall{
-        .start = V2{ .x = 450, .y = 400 },
-        .end = V2{ .x = 550, .y = 400 },
-    },
-    Wall{
-        .start = V2{ .x = 550, .y = 350 },
-        .end = V2{ .x = 550, .y = 400 },
-    },
-
+    // // Center
+    // Wall{
+    //     .start = V2{ .x = 300, .y = 200 },
+    //     .end = V2{ .x = 500, .y = 200 },
+    // },
+    // Wall{
+    //     .start = V2{ .x = 500, .y = 200 },
+    //     .end = V2{ .x = 500, .y = 400 },
+    // },
+    // Wall{
+    //     .start = V2{ .x = 200, .y = 500 },
+    //     .end = V2{ .x = 400, .y = 500 },
+    // },
+    // Wall{
+    //     .start = V2{ .x = 200, .y = 300 },
+    //     .end = V2{ .x = 200, .y = 500 },
+    // },
+    //
+    // // Top Left
+    // Wall{
+    //     .start = V2{ .x = 100, .y = 100 },
+    //     .end = V2{ .x = 100, .y = 300 },
+    // },
+    // Wall{
+    //     .start = V2{ .x = 100, .y = 300 },
+    //     .end = V2{ .x = 150, .y = 300 },
+    // },
+    // Wall{
+    //     .start = V2{ .x = 150, .y = 300 },
+    //     .end = V2{ .x = 150, .y = 400 },
+    // },
+    //
+    // // Bottom Right
+    // Wall{
+    //     .start = V2{ .x = 400, .y = 550 },
+    //     .end = V2{ .x = 450, .y = 550 },
+    // },
+    // Wall{
+    //     .start = V2{ .x = 450, .y = 400 },
+    //     .end = V2{ .x = 450, .y = 550 },
+    // },
+    // Wall{
+    //     .start = V2{ .x = 450, .y = 400 },
+    //     .end = V2{ .x = 550, .y = 400 },
+    // },
+    // Wall{
+    //     .start = V2{ .x = 550, .y = 350 },
+    //     .end = V2{ .x = 550, .y = 400 },
+    // },
+    //
     // VEX Field
     Wall{
         .start = V2{ .x = 225, .y = 125 },
