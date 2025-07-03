@@ -54,13 +54,13 @@ fn randomBotPos(randEnv: *zprob.RandomEnvironment, color: rl.Color) bot.Robot {
 }
 
 /// Updates the particles in four steps: movement, weight calculation, finding estimated robot position, and resampling. Returns the estimated robot
-pub fn updateParticles(particles: *[]Particle, comptime count: i32, randEnv: *zprob.RandomEnvironment, sensorStDev: f32, speedStDev: f32, angularSpeedStDev: f32, threshold: f32, robot: *bot.Robot) bot.Robot {
+pub fn updateParticles(particles: *[]Particle, comptime count: i32, randEnv: *zprob.RandomEnvironment, actualSensorStDev: f32, sensorStDev: f32, speedStDev: f32, angularSpeedStDev: f32, threshold: f32, robot: *bot.Robot) bot.Robot {
     // Update the position of each particle's simulated robot based on actual robot movement
     for (particles.*) |*particle| {
         particle.robot.update(false, randEnv, speedStDev, angularSpeedStDev, robot.realSpeed, robot.realAngularSpeed);
     }
 
-    calculateWeights(particles, randEnv, sensorStDev, robot);
+    calculateWeights(particles, randEnv, actualSensorStDev, sensorStDev, robot);
     const estimatedBot = bestEstimate(particles.*);
     resample(particles, count, randEnv, threshold);
 
@@ -68,9 +68,9 @@ pub fn updateParticles(particles: *[]Particle, comptime count: i32, randEnv: *zp
 }
 
 /// Calculates weights for each particle by comparing simulated sensor readings with the actual sensor readings and a normal distribution
-pub fn calculateWeights(particles: *[]Particle, randEnv: *zprob.RandomEnvironment, stdev: f32, robot: *bot.Robot) void {
+pub fn calculateWeights(particles: *[]Particle, randEnv: *zprob.RandomEnvironment, actualSensorStDev: f32, sensorStDev: f32, robot: *bot.Robot) void {
     // Get list of distance sensor readings of the actual robot
-    const robotDist = robot.distanceToClosestSide(false, randEnv, stdev);
+    const robotDist = robot.distanceToClosestSide(false, randEnv, actualSensorStDev);
 
     // Loop through each particle and calculate the weight
     for (particles.*) |*particle| {
@@ -80,22 +80,22 @@ pub fn calculateWeights(particles: *[]Particle, randEnv: *zprob.RandomEnvironmen
 
         // Loop through each sensor and get the probability of the simulated sensor's reading based on the normal distribution of the actual robot's sensor reading
         for (0..particleDist.len) |i| {
-            weight *= lib.ftf(randEnv.dNormal(particleDist[i], robotDist[i], stdev, false) catch {
-                std.debug.print("particleDist: {d}, robotDist: {d}, stdev: {d}", .{ particleDist[i], robotDist[i], stdev });
+            weight *= lib.ftf(randEnv.dNormal(particleDist[i], robotDist[i], sensorStDev, false) catch {
+                std.debug.print("particleDist: {d}, robotDist: {d}, stdev: {d}", .{ particleDist[i], robotDist[i], sensorStDev });
                 return;
             });
         }
 
         // Calculate weight for angle
-        // var angleDiff = @abs(robot.heading - particle.robot.heading);
-        // if (angleDiff > 180.0) {
-        //     angleDiff = 360.0 - angleDiff; // Angle should be between 0 and 180
-        // }
+        var angleDiff = @abs(robot.heading - particle.robot.heading);
+        if (angleDiff > 180.0) {
+            angleDiff = 360.0 - angleDiff; // Angle should be between 0 and 180
+        }
 
-        // weight *= lib.ftf(randEnv.dNormal(angleDiff, 0.0, stdev, false) catch {
-        //     std.debug.print("angleDiff: {d}, stdev: {d}", .{ angleDiff, stdev });
-        //     return;
-        // });
+        weight *= lib.ftf(randEnv.dNormal(angleDiff, 0.0, 10.0, false) catch {
+            std.debug.print("angleDiff: {d}", .{angleDiff});
+            return;
+        });
 
         particle.weight = weight;
     }

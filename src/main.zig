@@ -12,19 +12,8 @@ var font: rl.Font = undefined;
 
 // Game entry point
 pub fn main() !void {
-    // Create a random number generator
-    // var prng = std.Random.DefaultPrng.init(blk: {
-    //     var seed: u64 = undefined;
-    //     std.posix.getrandom(std.mem.asBytes(&seed)) catch unreachable;
-    //     break :blk seed;
-    // });
-    // var random = prng.random();
-    // var rand = &random;
-
     // Setup distribution generator
     const seed: u64 = @intCast(std.time.microTimestamp());
-    // var prngD = std.Random.DefaultPrng.init(seed);
-    // var randD = prngD.random();
     var randEnv = try zprob.RandomEnvironment.initWithSeed(seed, std.heap.page_allocator);
     defer randEnv.deinit();
 
@@ -49,15 +38,16 @@ pub fn main() !void {
     var robotAcc = lib.Robot.init(CENTER, -90, rl.Color.blue, false);
     var mclBot = lib.Robot.init(CENTER, -90, rl.Color.pink, false);
 
-    // Define the particles
-    const PARTICLE_COUNT = 2000;
-    const THRESHOLD = lib.itf(PARTICLE_COUNT) * 0.7; // Tune this for optimal performance
-    var particles = lib.initParticles(PARTICLE_COUNT, &randEnv);
+    // Tuning constants
+    const PARTICLE_COUNT: i32 = 2000; // Number of particles
+    const THRESHOLD: f32 = lib.itf(PARTICLE_COUNT) * 0.9; // Regulates resampling frequency using effective sample size. Tune this for optimal performance - high threshold = more resampling
+    const ACTUAL_SENSOR_STDEV: f32 = 10.0; // Standard deviation for the actual robot's sensor noise
+    const SENSOR_STDEV: f32 = 20.0; // Standard deviation for comparing simulated sensor readings using normal pdf
+    const SPEED_STDEV: f32 = 10.0; // Standard deviation for all robot speeds
+    const ANGULAR_SPEED_STDEV: f32 = 20.0; // Standard deviation for all robot angular speeds
 
-    // Standard deviations
-    const SENSOR_STDEV = 20;
-    const SPEED_STDEV = 5;
-    const ANGULAR_SPEED_STDEV = 30;
+    // Define the particles
+    var particles = lib.initParticles(PARTICLE_COUNT, &randEnv);
 
     // While window should stay open...
     while (!rl.windowShouldClose()) {
@@ -66,7 +56,7 @@ pub fn main() !void {
         // Handle inputs
         robot.update(true, &randEnv, SPEED_STDEV, ANGULAR_SPEED_STDEV, 0, 0); // Estimated robot uses exact movement
         robotAcc.update(false, &randEnv, SPEED_STDEV, ANGULAR_SPEED_STDEV, 0, 0); // Actual robot uses random movement
-        mclBot = lib.updateParticles(&particles, PARTICLE_COUNT, &randEnv, SENSOR_STDEV, SPEED_STDEV, ANGULAR_SPEED_STDEV, THRESHOLD, &robotAcc);
+        mclBot = lib.updateParticles(&particles, PARTICLE_COUNT, &randEnv, ACTUAL_SENSOR_STDEV, SENSOR_STDEV, SPEED_STDEV, ANGULAR_SPEED_STDEV, THRESHOLD, &robotAcc);
 
         // Robot kidnapping (moving to random position)
         if (rl.isKeyPressed(rl.KeyboardKey.k)) {
