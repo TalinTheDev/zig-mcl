@@ -10,233 +10,180 @@ const wall = @import("wall.zig");
 const zprob = @import("zprob");
 const lib = @import("root.zig");
 
+var frames: i32 = 0;
+var resampleFrames: i32 = 0;
+
 /// Represents a particle
 pub const Particle = struct {
     robot: bot.Robot,
-    id: usize,
+    weight: f32,
 };
 
 /// Returns an array of particles with their position being randomly generated
 /// within the field's boundaries
-pub fn initParticles(comptime count: i32, uniformDist: zprob.Uniform(f32)) [count]Particle {
-    var particles = [_]Particle{undefined} ** count;
+pub fn initParticles(comptime count: i32, randEnv: *zprob.RandomEnvironment) []Particle {
+    var particles = std.heap.page_allocator.alloc(Particle, count) catch unreachable; // Create an array of count particles
     for (0..count) |i| {
         particles[i] = Particle{
-            .robot = randomBotPos(uniformDist, rl.Color.green),
-            .id = i,
+            .robot = randomBotPos(randEnv, rl.Color.green), // Assign a simulated robot at a random position
+            .weight = 1.0 / lib.itf(count), // Initial normalized weight is 1 / number of particles
         };
     }
+
     return particles;
 }
 
-/// Updates the particles (random movement)
-pub fn updateParticles(particles: []Particle, rand: *std.Random) void {
-    for (particles) |*particle| {
-        particle.robot.update(rand, false);
-    }
-}
-
-const Probability = struct {
-    prob: f32,
-    position: rl.Vector2,
-};
-
-const sdev = 0.15;
-var firstRun = false;
-
 /// Returns a robot at a random position
-fn randomBotPos(uniformDist: zprob.Uniform(f32), color: rl.Color) bot.Robot {
+fn randomBotPos(randEnv: *zprob.RandomEnvironment, color: rl.Color) bot.Robot {
+    // Define min and max positions for x and y axes
     const rangeMin = wall.walls[0].start.x + 12.5;
     const rangeMax = wall.walls[0].end.x - 12.5;
-    var robot = bot.Robot{
-        .center = rl.Vector2{
-            .x = uniformDist.sample(rangeMin, rangeMax),
-            .y = uniformDist.sample(rangeMin, rangeMax),
-        },
-        .color = color,
-    };
-    while (!robot.checkCollision()) {
-        robot.center = rl.Vector2{
-            .x = uniformDist.sample(rangeMin, rangeMax),
-            .y = uniformDist.sample(rangeMin, rangeMax),
-        };
+
+    // Create and initialize simulated robot
+    var robot = bot.Robot.init(rl.Vector2{
+        .x = lib.ftf(randEnv.rUniform(rangeMin, rangeMax)),
+        .y = lib.ftf(randEnv.rUniform(rangeMin, rangeMax)),
+    }, -90, color, true);
+
+    // If robot is colliding, move to a different position
+    while (robot.checkCollision()) {
+        robot.setPos(lib.ftf(randEnv.rUniform(rangeMin, rangeMax)), lib.ftf(randEnv.rUniform(rangeMin, rangeMax)));
     }
+
     return robot;
 }
 
-fn compute_n_eff(probs: []Probability, comptime PARTICLE_COUNT: i32) f32 {
-    var sum_sq: f32 = 0.0;
-    for (0..PARTICLE_COUNT) |p| {
-        sum_sq += std.math.pow(f32, probs[p].prob, 2);
+/// Updates the particles in four steps: movement, weight calculation, finding estimated robot position, and resampling. Returns the estimated robot
+pub fn updateParticles(particles: *[]Particle, comptime count: i32, randEnv: *zprob.RandomEnvironment, sensorStDev: f32, speedStDev: f32, angularSpeedStDev: f32, threshold: f32, robot: *bot.Robot) bot.Robot {
+    // Update the position of each particle's simulated robot based on actual robot movement
+    for (particles.*) |*particle| {
+        particle.robot.update(false, randEnv, speedStDev, angularSpeedStDev, robot.realSpeed, robot.realAngularSpeed);
     }
-    if (sum_sq == 0.0) return 0.0;
-    return 1.0 / sum_sq;
-}
-var resampleFrames: i32 = 0;
-var frames: i32 = 0;
-var resuce: i32 = 100;
-/// Re-samples the particles and moves them accordingly
-pub fn resample(particles: []Particle, comptime PARTICLE_COUNT: i32, normal: zprob.Normal(f32), uniformDist: zprob.Uniform(f32), robot: *bot.Robot) bot.Robot {
-    if (resampleFrames <= 10) {
-        resampleFrames = 0;
-        if (!firstRun) {
-            for (0..lib.ftu(@floor(@as(f32, @floatFromInt(particles.len)) * 0.75))) |i| {
-                particles[i].robot.center.x = 125;
-                particles[i].robot.center.y = 125;
-            }
-            firstRun = true;
-            return bot.Robot{ .center = rl.Vector2{ .x = 125, .y = 125 }, .color = rl.Color.pink };
-        }
-        const extraTotal = comptime (PARTICLE_COUNT + (lib.itf(PARTICLE_COUNT) * 0.05));
-        var probabilities = [_]Probability{undefined} ** extraTotal;
 
-        const robotDist = robot.distanceToClosestSide(uniformDist, false);
-        const rdT = robotDist[0];
-        const rdR = robotDist[1];
-        const rdB = robotDist[2];
-        const rdL = robotDist[3];
+    calculateWeights(particles, randEnv, sensorStDev, robot);
+    const estimatedBot = bestEstimate(particles.*);
+    resample(particles, count, randEnv, threshold);
 
-        for (0..(extraTotal - PARTICLE_COUNT)) |i| {
-            var particle = Particle{
-                .robot = randomBotPos(uniformDist, rl.Color.green),
-                .id = i,
-            };
-
-            const particleDist = particle.robot.distanceToClosestSide(uniformDist, false);
-            const dT = particleDist[0];
-            const dR = particleDist[1];
-            const dB = particleDist[2];
-            const dL = particleDist[3];
-
-            // var weight: f32 = 0.0;
-            // weight += -(dT * dT) / (2.0 * sdev * sdev);
-            // weight += -(dR * dR) / (2.0 * sdev * sdev);
-            // weight += -(dB * dB) / (2.0 * sdev * sdev);
-            // weight += -(dL * dL) / (2.0 * sdev * sdev);
-            // weight += -4 * (std.math.log(f32, std.math.e, (std.math.sqrt(2.0 * std.math.pi) * sdev)));
-            // weight = std.math.pow(f32, std.math.e, weight);
-            const probT = normal.pdf(rdT, dT, sdev) catch 0.0;
-            const probR = normal.pdf(rdR, dR, sdev) catch 0.0;
-            const probB = normal.pdf(rdB, dB, sdev) catch 0.0;
-            const probL = normal.pdf(rdL, dL, sdev) catch 0.0;
-            const weight = probT * probR * probB * probL;
-            // var log_weight: f32 = 0.0;
-            // log_weight += std.math.log(f32, probT, std.math.e);
-            // log_weight += std.math.log(f32, probR, std.math.e);
-            // log_weight += std.math.log(f32, probB, std.math.e);
-            // log_weight += std.math.log(f32, probL, std.math.e);
-            // const weight = std.math.exp(log_weight);
-            probabilities[PARTICLE_COUNT - 1 + i] = Probability{
-                .prob = weight,
-                .position = particle.robot.center,
-            };
-        }
-        for (particles, 0..) |*particle, i| {
-            const particleDist = particle.robot.distanceToClosestSide(uniformDist, false);
-            const dT = particleDist[0];
-            const dR = particleDist[1];
-            const dB = particleDist[2];
-            const dL = particleDist[3];
-
-            // var weight: f32 = 0.0;
-            // weight += -(dT * dT) / (2.0 * sdev * sdev);
-            // weight += -(dR * dR) / (2.0 * sdev * sdev);
-            // weight += -(dB * dB) / (2.0 * sdev * sdev);
-            // weight += -(dL * dL) / (2.0 * sdev * sdev);
-            // weight += -4 * (std.math.log(f32, std.math.e, (std.math.sqrt(2.0 * std.math.pi) * sdev)));
-            // weight = std.math.pow(f32, std.math.e, weight);
-
-            // _ = normal; // Needed for compiler
-            const probT = normal.pdf(rdT, dT, sdev) catch 0.0;
-            const probR = normal.pdf(rdR, dR, sdev) catch 0.0;
-            const probB = normal.pdf(rdB, dB, sdev) catch 0.0;
-            const probL = normal.pdf(rdL, dL, sdev) catch 0.0;
-            const weight = probT * probR * probB * probL;
-            probabilities[i] = Probability{
-                .prob = weight,
-                .position = particle.robot.center,
-            };
-        }
-        // Normalize probababilities
-        var sumN: f32 = 0.0;
-        for (probabilities) |prob| {
-            sumN += prob.prob;
-        }
-        for (probabilities[0..]) |*prob| {
-            if (sumN == 0) {
-                prob.prob = 1 / PARTICLE_COUNT;
-                continue;
-            }
-            prob.prob /= sumN;
-        }
-        if (frames >= 30 and resuce <= 0) {
-            const n_eff = compute_n_eff(&probabilities, PARTICLE_COUNT);
-
-            if (n_eff < lib.itf(PARTICLE_COUNT) * 0.2) { // 20% of total
-                // We are overconfident
-                for (0..(lib.ftu(@floor(lib.itf(PARTICLE_COUNT) * 0.15)))) |i| {
-                    particles[i].robot = randomBotPos(uniformDist, rl.Color.green);
-                }
-                // Trust
-                return randomBotPos(uniformDist, rl.Color.pink);
-            }
-            frames = 0;
-            resuce = 100;
-        } else {
-            frames += 1;
-            resuce -= 1;
-        }
-        // Sort probabilities
-        std.mem.sort(Probability, &probabilities, {}, comptime sortProbabilities());
-
-        // Get the number of probabilities that just add up to 1+;
-        var sum: f32 = 0.0;
-        var i: usize = 0.0;
-        for (probabilities) |prob| {
-            sum += prob.prob;
-            i += 1;
-            if (sum > 1)
-                break;
-        }
-
-        // For each of those probabilities, calculate about how many particles
-        // represent that percentage of the total
-        // Then for each of those
-        for (0..i) |j| {
-            const count: u64 = lib.ftu(@min(PARTICLE_COUNT - 1, @trunc(@as(f64, probabilities[j].prob) * extraTotal)));
-            for (0..count) |k| {
-                particles[k].robot.center = probabilities[j].position;
-            }
-        }
-
-        var avgX: f32 = 0;
-        var avgY: f32 = 0;
-        var avgHeading: f32 = 0;
-        var totalW: f32 = 0;
-        for (particles) |particle| {
-            // Shouldn't really work with sorted probabilities but welp
-            totalW += probabilities[particle.id].prob;
-            avgX += particle.robot.center.x * probabilities[particle.id].prob;
-            avgY += particle.robot.center.y * probabilities[particle.id].prob;
-            avgHeading += particle.robot.heading * probabilities[particle.id].prob;
-        }
-        avgX /= totalW;
-        avgY /= totalW;
-        avgHeading /= totalW;
-
-        return bot.Robot{ .center = rl.Vector2{
-            .x = avgX,
-            .y = avgY,
-        }, .heading = avgHeading, .color = rl.Color.pink };
-    }
-    resampleFrames += 1;
-    return randomBotPos(uniformDist, rl.Color.pink);
+    return estimatedBot;
 }
 
-fn sortProbabilities() fn (void, Probability, Probability) bool {
-    return struct {
-        pub fn inner(_: void, a: Probability, b: Probability) bool {
-            return a.prob > b.prob;
+/// Calculates weights for each particle by comparing simulated sensor readings with the actual sensor readings and a normal distribution
+pub fn calculateWeights(particles: *[]Particle, randEnv: *zprob.RandomEnvironment, stdev: f32, robot: *bot.Robot) void {
+    // Get list of distance sensor readings of the actual robot
+    const robotDist = robot.distanceToClosestSide(false, randEnv, stdev);
+
+    // Loop through each particle and calculate the weight
+    for (particles.*) |*particle| {
+        // Get list of distance sensor readings of the simulated robot
+        const particleDist = particle.robot.distanceToClosestSide(true, randEnv, 0.0);
+        var weight: f32 = 1.0;
+
+        // Loop through each sensor and get the probability of the simulated sensor's reading based on the normal distribution of the actual robot's sensor reading
+        for (0..particleDist.len) |i| {
+            weight *= lib.ftf(randEnv.dNormal(particleDist[i], robotDist[i], stdev, false) catch {
+                std.debug.print("particleDist: {d}, robotDist: {d}, stdev: {d}", .{ particleDist[i], robotDist[i], stdev });
+                return;
+            });
         }
-    }.inner;
+
+        // Calculate weight for angle
+        // var angleDiff = @abs(robot.heading - particle.robot.heading);
+        // if (angleDiff > 180.0) {
+        //     angleDiff = 360.0 - angleDiff; // Angle should be between 0 and 180
+        // }
+
+        // weight *= lib.ftf(randEnv.dNormal(angleDiff, 0.0, stdev, false) catch {
+        //     std.debug.print("angleDiff: {d}, stdev: {d}", .{ angleDiff, stdev });
+        //     return;
+        // });
+
+        particle.weight = weight;
+    }
+
+    // Normalize weights
+    normalizeWeights(particles);
+}
+
+/// Scales all weights so that the sum of the weights is 1
+fn normalizeWeights(particles: *[]Particle) void {
+    var sumWeights: f32 = 0.0;
+
+    // Add up all the weights
+    for (particles.*) |p| {
+        sumWeights += p.weight;
+    }
+
+    // Divide all weights by total
+    for (particles.*) |*p| {
+        p.weight /= sumWeights;
+    }
+}
+
+/// Returns a robot with the best estimate for the location of the actual robot using a weighted average of the particle positions
+pub fn bestEstimate(particles: []Particle) bot.Robot {
+    var sumWeights: f32 = 0.0;
+    var sumX: f32 = 0.0;
+    var sumY: f32 = 0.0;
+    var sumAngleY: f32 = 0.0;
+    var sumAngleX: f32 = 0.0;
+
+    // Calculate the sum of the weights (should be normalized, but just in case) and the weighted sum for the x and y coordinates
+    for (particles) |p| {
+        sumWeights += p.weight;
+        sumX += p.weight * p.robot.pos.x;
+        sumY += p.weight * p.robot.pos.y;
+        sumAngleY += p.weight * @sin(std.math.degreesToRadians(p.robot.heading));
+        sumAngleX += p.weight * @cos(std.math.degreesToRadians(p.robot.heading));
+    }
+
+    // Divide the weighted sum by total to get weighted average
+    const pos = rl.Vector2{ .x = sumX / sumWeights, .y = sumY / sumWeights };
+    const heading = std.math.radiansToDegrees(std.math.atan2(sumAngleY, sumAngleX));
+    return bot.Robot.init(pos, heading, rl.Color.pink, false);
+}
+
+/// Calculates effective sample size (N eff) for handling degeneracy by resampling only when N eff is low
+fn effectiveSampleSize(particles: []Particle) f32 {
+    var sumWeightsSquared: f32 = 0.0;
+
+    // Formula for N eff is 1 / (w_1^2 + w_2^2 + ... + w_n^2)
+    for (particles) |p| {
+        sumWeightsSquared += std.math.pow(f32, p.weight, 2);
+    }
+
+    if (sumWeightsSquared == 0.0) return @as(f32, @floatFromInt(particles.len)); // Handling divide by zero case
+    return 1.0 / sumWeightsSquared;
+}
+
+/// Resamples the particles and moves them accordingly
+pub fn resample(particles: *[]Particle, comptime N: i32, randEnv: *zprob.RandomEnvironment, threshold: f32) void {
+    // Only resample when the effective sample size is less than the threshold (tune the threshold for optimal performance)
+    if (effectiveSampleSize(particles.*) < threshold) {
+        // Low-variance resampling algorithm
+
+        // This algorithm makes sure the variance in the weights is low
+        // while moving lower-weighted particles to positions with higher weights
+        // The particle count remains the same
+
+        var newParticles = std.heap.page_allocator.alloc(Particle, N) catch unreachable; // New array of particles
+        var U: f32 = lib.ftf(randEnv.rUniform(0, 1.0 / lib.itf(N))); // Initial random U value, uniformly from 0 to 1 / number of particles
+        var cumulative: f32 = 0; // Cumulative sum of weights
+        var i: usize = 0; // Index of the particle chosen to be resampled
+
+        for (0..N) |n| { // N particles will be resampled, one for every iteration
+            U += 1.0 / lib.itf(N); // Increment U by 1 / number of particles (weight when all particles have equal weights)
+            while (U > cumulative and i < particles.len - 1) { // Add weights to cumulative until the cumulative weight is greater than U. The last weight added will be resampled
+                cumulative += particles.*[i].weight; // Cumulatively add the weight of the particles starting from the first
+                i += 1; // Increment the index of the chosen particle by 1
+            }
+
+            newParticles[n] = particles.*[i]; // Resample the chosen particle into the new array
+            cumulative = 0; // Reset cumulative
+            i = 0; // Reset index
+        }
+
+        std.heap.page_allocator.free(particles.*);
+        particles.* = newParticles;
+        normalizeWeights(particles);
+    }
 }

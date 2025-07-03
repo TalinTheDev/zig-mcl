@@ -19,6 +19,11 @@ pub fn ftu(float: f64) u64 {
     return @as(u64, @intFromFloat(float));
 }
 
+/// Convert a f64 to a f32
+pub fn ftf(float: f64) f32 {
+    return @as(f32, @floatCast(float));
+}
+
 /// Possible movements
 pub const MOVE = enum {
     UP,

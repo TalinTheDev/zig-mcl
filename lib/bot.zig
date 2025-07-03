@@ -4,35 +4,58 @@
 // Imports
 const std = @import("std");
 const rl = @import("raylib");
+const rm = rl.math;
 const wall = @import("wall.zig");
 const lib = @import("root.zig");
 const zprob = @import("zprob");
 
 /// Robot
 pub const Robot = struct {
-    center: rl.Vector2,
-    sCenter: rl.Vector2 = rl.Vector2{ .x = 0, .y = 0 },
+    pos: rl.Vector2 = rl.Vector2{ .x = 0, .y = 0 },
+    sPos: rl.Vector2 = rl.Vector2{ .x = 0, .y = 0 },
     radius: f32 = 10,
     heading: f32 = -90,
+    speed: f32 = 30,
+    angularSpeed: f32 = 60,
+    realSpeed: f32 = 30,
+    realAngularSpeed: f32 = 60,
     viewDistance: f32 = 500,
     color: rl.Color = rl.Color.orange,
+    isParticle: bool = false,
+    isEstimate: bool = false,
+
+    pub fn init(startPos: rl.Vector2, heading: f32, color: rl.Color, isParticle: bool) Robot {
+        return Robot{
+            .pos = startPos,
+            .heading = heading,
+            .color = color,
+            .isParticle = isParticle,
+        };
+    }
+
+    pub fn setPos(self: *Robot, x: f32, y: f32) void {
+        self.pos = rl.Vector2{
+            .x = x,
+            .y = y,
+        };
+    }
 
     pub fn draw(self: *Robot) void {
-        rl.drawCircleV(self.center, self.radius, self.color);
-        rl.drawCircleV(self.sCenter, self.radius / 4, rl.Color.black);
-        _ = self.castRays();
+        rl.drawCircleV(self.pos, self.radius, self.color);
+        rl.drawCircleV(self.sPos, self.radius / 4, rl.Color.black);
+        // for (self.castRays()) |ray| {
+        //     rl.drawLine(lib.fti(ray.start.x), lib.fti(ray.start.y), lib.fti(ray.end.x), lib.fti(ray.end.y), rl.Color.red);
+        // }
     }
 
     /// Returns an array of four floats representing the closest distance
     /// detected by each ray cast from each direction of the robot
     // Just trust the math bro, idek
-    pub fn distanceToClosestSide(self: *Robot, rand: zprob.Uniform(f32), exact: bool) [4]f32 {
-        const diff = if (!exact) rand.sample(-4, 4) else 0;
-
+    pub fn distanceToClosestSide(self: *Robot, exact: bool, randEnv: *zprob.RandomEnvironment, stdev: f32) [4]f32 {
         const rays = self.castRays();
         var dists: [rays.len]f32 = undefined;
         for (rays, 0..) |ray, i| {
-            var closestDist: f32 = std.math.floatMin(f32);
+            var closestDist: f32 = std.math.floatMax(f32);
             for (lib.walls) |wallToCheck| {
                 const d = (ray.start.x - ray.end.x) * (wallToCheck.start.y - wallToCheck.end.y) - (ray.start.y - ray.end.y) * (wallToCheck.start.x - wallToCheck.end.x);
 
@@ -43,14 +66,27 @@ pub const Robot = struct {
 
                 // const u = ((ray.start.x - wallToCheck.start.x) * (ray.start.y - ray.end.y) - (ray.start.y - wallToCheck.start.y) * (ray.start.x - ray.end.y)) / d;
 
-                const x = (ray.start.x + t * (ray.end.x - ray.start.x));
-                const y = (ray.start.y + t * (ray.end.y - ray.start.y));
+                const hitPoint = rl.Vector2{
+                    .x = ray.start.x + t * (ray.end.x - ray.start.x),
+                    .y = ray.start.y + t * (ray.end.y - ray.start.y),
+                };
 
-                const dist = std.math.sqrt((std.math.pow(f32, (x - ray.start.x), 2) + std.math.pow(f32, (y - ray.start.y), 2))) + diff;
+                const dist = rm.vector2Length(rm.vector2Subtract(hitPoint, ray.start));
+
                 if (dist < closestDist) {
                     closestDist = dist;
+                    // rl.drawLine(lib.fti(ray.start.x), lib.fti(ray.start.y), lib.fti(hitPoint.x), lib.fti(hitPoint.y), rl.Color.red);
                 }
             }
+
+            if (!exact) {
+                // Use a normal distribution to vary the sensor reading
+                closestDist = lib.ftf(randEnv.rNormal(closestDist, stdev) catch {
+                    std.debug.print("dist: {d}, stdev: {d}", .{ closestDist, stdev });
+                    return [4]f32{ 0, 0, 0, 0 };
+                });
+            }
+
             dists[i] = closestDist;
         }
         return dists;
@@ -60,8 +96,8 @@ pub const Robot = struct {
     pub fn castRays(self: *Robot) [4]Ray {
         // -90 Deg Ray
         const rayStart90 = rl.Vector2{
-            .x = self.sCenter.x + ((self.radius / 4) * @cos(std.math.degreesToRadians(self.heading))),
-            .y = self.sCenter.y + ((self.radius / 4) * @sin(std.math.degreesToRadians(self.heading))),
+            .x = self.sPos.x + ((self.radius / 4) * @cos(std.math.degreesToRadians(self.heading))),
+            .y = self.sPos.y + ((self.radius / 4) * @sin(std.math.degreesToRadians(self.heading))),
         };
         const rayEnd90 = rl.Vector2{
             .x = rayStart90.x + self.viewDistance * @cos(std.math.degreesToRadians(self.heading)),
@@ -70,8 +106,8 @@ pub const Robot = struct {
 
         // -270 Deg Ray
         const rayStart270 = rl.Vector2{
-            .x = self.sCenter.x + ((self.radius / 4) * @cos(std.math.degreesToRadians(self.heading - 180))),
-            .y = self.sCenter.y + ((self.radius / 4) * @sin(std.math.degreesToRadians(self.heading - 180))),
+            .x = self.sPos.x + ((self.radius / 4) * @cos(std.math.degreesToRadians(self.heading - 180))),
+            .y = self.sPos.y + ((self.radius / 4) * @sin(std.math.degreesToRadians(self.heading - 180))),
         };
         const rayEnd270 = rl.Vector2{
             .x = rayStart270.x + self.viewDistance * @cos(std.math.degreesToRadians(self.heading - 180)),
@@ -80,8 +116,8 @@ pub const Robot = struct {
 
         // 0 Deg Ray
         const rayStart0 = rl.Vector2{
-            .x = self.sCenter.x + ((self.radius / 4) * @cos(std.math.degreesToRadians(self.heading + 90))),
-            .y = self.sCenter.y + ((self.radius / 4) * @sin(std.math.degreesToRadians(self.heading + 90))),
+            .x = self.sPos.x + ((self.radius / 4) * @cos(std.math.degreesToRadians(self.heading + 90))),
+            .y = self.sPos.y + ((self.radius / 4) * @sin(std.math.degreesToRadians(self.heading + 90))),
         };
         const rayEnd0 = rl.Vector2{
             .x = rayStart0.x + self.viewDistance * @cos(std.math.degreesToRadians(self.heading + 90)),
@@ -90,8 +126,8 @@ pub const Robot = struct {
 
         // -180 Deg Ray
         const rayStart180 = rl.Vector2{
-            .x = self.sCenter.x + ((self.radius / 4) * @cos(std.math.degreesToRadians(self.heading - 90))),
-            .y = self.sCenter.y + ((self.radius / 4) * @sin(std.math.degreesToRadians(self.heading - 90))),
+            .x = self.sPos.x + ((self.radius / 4) * @cos(std.math.degreesToRadians(self.heading - 90))),
+            .y = self.sPos.y + ((self.radius / 4) * @sin(std.math.degreesToRadians(self.heading - 90))),
         };
         const rayEnd180 = rl.Vector2{
             .x = rayStart180.x + self.viewDistance * @cos(std.math.degreesToRadians(self.heading - 90)),
@@ -105,65 +141,78 @@ pub const Robot = struct {
             Ray{ .start = rayStart180, .end = rayEnd180 },
         };
     }
-    pub fn updateKidnap(self: *Robot, rand: zprob.Uniform(f32)) void {
-        if (rl.isKeyPressed(rl.KeyboardKey.k)) {
-            const rangeMin = wall.walls[0].start.x + 12.5;
-            const rangeMax = wall.walls[0].end.x - 12.5;
-            const posX = rand.sample(rangeMin, rangeMax);
-            const posY = rand.sample(rangeMin, rangeMax);
 
-            self.center = rl.Vector2{
-                .x = posX,
-                .y = posY,
-            };
-
-            while (!self.checkCollision()) {
-                self.center = rl.Vector2{
-                    .x = posX,
-                    .y = posY,
-                };
-            }
-        }
-    }
-    /// Updates the position of the small circle inside the robot
-    pub fn updateAfterRotation(self: *Robot) void {
-        self.sCenter = rl.Vector2{
-            .x = self.center.x + ((self.radius / 2) * @cos(std.math.degreesToRadians(self.heading))),
-            .y = self.center.y + ((self.radius / 2) * @sin(std.math.degreesToRadians(self.heading))),
+    /// Updates the position of the sensor inside the robot
+    pub fn updateSensorLoc(self: *Robot) void {
+        self.sPos = rl.Vector2{
+            .x = self.pos.x + ((self.radius / 2) * @cos(std.math.degreesToRadians(self.heading))),
+            .y = self.pos.y + ((self.radius / 2) * @sin(std.math.degreesToRadians(self.heading))),
         };
     }
 
     /// Handles movement for a robot
-    pub fn update(self: *Robot, rand: *std.Random, exact: bool) void {
-        const diff = if (!exact) lib.itf(rand.intRangeAtMost(i32, 0, 4)) else 2;
-        const diffA = if (!exact) lib.itf(rand.intRangeAtMost(i32, 0, 10)) else 5;
-        const preMoveY = self.center.y;
-        const preMoveX = self.center.x;
-        if (rl.isKeyDown(rl.KeyboardKey.w)) {
-            self.center.y -= diff;
-        }
-        if (rl.isKeyDown(rl.KeyboardKey.s)) {
-            self.center.y += diff;
-        }
-        if (rl.isKeyDown(rl.KeyboardKey.a)) {
-            self.center.x -= diff;
-        }
-        if (rl.isKeyDown(rl.KeyboardKey.d)) {
-            self.center.x += diff;
-        }
+    pub fn update(self: *Robot, exact: bool, randEnv: *zprob.RandomEnvironment, speedStDev: f32, angularSpeedStDev: f32, actualSpeed: f32, actualAngularSpeed: f32) void {
+        if (!self.isEstimate) {
+            // Generate randomness using normal distribution
+            const noise: f32 = if (!exact) lib.ftf(randEnv.rNormal(0, speedStDev) catch {
+                std.debug.print("invalid speed noise", .{});
+                return;
+            }) else 0.0;
+            const noiseA: f32 = if (!exact) lib.ftf(randEnv.rNormal(0, angularSpeedStDev) catch {
+                std.debug.print("invalid angular noise", .{});
+                return;
+            }) else 0.0;
 
-        if (rl.isKeyDown(rl.KeyboardKey.left)) {
-            self.heading -= diffA;
+            if (self.isParticle) {
+                // Set particle's speed to the actual robot's speed and add noise
+                self.speed = actualSpeed;
+                self.angularSpeed = actualAngularSpeed;
+                self.realSpeed = (self.speed + noise);
+                self.realAngularSpeed = (self.angularSpeed + noiseA);
+
+                if (self.speed == 0.0) {
+                    self.realSpeed = 0.0;
+                }
+
+                if (self.angularSpeed == 0.0) {
+                    self.realAngularSpeed = 0;
+                }
+            } else {
+                // Get keyboard input and assign to joystick value
+                const joystickV = @as(f32, @floatFromInt(@intFromBool(rl.isKeyDown(rl.KeyboardKey.w) or rl.isKeyDown(rl.KeyboardKey.up)))) -
+                    @as(f32, @floatFromInt(@intFromBool(rl.isKeyDown(rl.KeyboardKey.s) or rl.isKeyDown(rl.KeyboardKey.down))));
+                const joystickH = @as(f32, @floatFromInt(@intFromBool(rl.isKeyDown(rl.KeyboardKey.d) or rl.isKeyDown(rl.KeyboardKey.right)))) -
+                    @as(f32, @floatFromInt(@intFromBool(rl.isKeyDown(rl.KeyboardKey.a) or rl.isKeyDown(rl.KeyboardKey.left))));
+
+                self.realSpeed = (self.speed + noise) * joystickV;
+                self.realAngularSpeed = (self.angularSpeed + noiseA) * joystickH;
+            }
+
+            const prevPosX = self.pos.x;
+            const prevPosY = self.pos.y;
+
+            // delta position = speed * delta time (time between frames)
+            self.pos.x += self.realSpeed * @cos(std.math.degreesToRadians(self.heading)) * rl.getFrameTime();
+            var dirX: f32 = std.math.sign(prevPosX - self.pos.x);
+
+            // Check for collisions and back out horizontally if colliding
+            while (self.checkCollision()) {
+                if (dirX == 0.0) dirX = 1.0;
+                self.pos.x += dirX;
+            }
+
+            self.pos.y += self.realSpeed * @sin(std.math.degreesToRadians(self.heading)) * rl.getFrameTime();
+            var dirY: f32 = std.math.sign(prevPosY - self.pos.y);
+
+            // Check for collisions and back out vertically if colliding
+            while (self.checkCollision()) {
+                if (dirY == 0.0) dirY = 1.0;
+                self.pos.y += dirY;
+            }
+
+            self.heading += self.realAngularSpeed * rl.getFrameTime();
+            self.updateSensorLoc();
         }
-        if (rl.isKeyDown(rl.KeyboardKey.right)) {
-            self.heading += diffA;
-        }
-        self.updateAfterRotation();
-        if (!self.checkCollision()) {
-            self.center.x = preMoveX;
-            self.center.y = preMoveY;
-        }
-        self.updateAfterRotation();
     }
 
     /// Check wall collisions
@@ -171,10 +220,10 @@ pub const Robot = struct {
         for (0..lib.walls.len) |i| {
             const wallToCheck = lib.wall.walls[i];
 
-            if (rl.checkCollisionCircleLine(self.center, self.radius, wallToCheck.start, wallToCheck.end)) {
-                return false;
+            if (rl.checkCollisionCircleLine(self.pos, self.radius, wallToCheck.start, wallToCheck.end)) {
+                return true;
             }
         }
-        return true;
+        return false;
     }
 };
