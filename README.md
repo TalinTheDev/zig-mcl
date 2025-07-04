@@ -74,4 +74,4 @@ v1.0.0 - WIP
 - [x] Basic robots w/ movement & collision
 - [x] Translational & rotational movement that is taken into account for MCL
 - [x] Not bad MCL implementation
-- [ ] Clean code including comments, structure, neatness
+- [ ] Clean code including comments, structure, neatness (Can you put a half checkmark?)
