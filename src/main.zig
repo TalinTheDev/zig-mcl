@@ -120,11 +120,11 @@ pub fn main() !void {
 
         drawText("Particle Count: %d", .{particles.len}, 700, 200, rl.Color.black);
 
-        drawText("MCL Simulation by @TalinTheDev", .{}, 700, 475, rl.Color.black);
+        drawText("MCL Simulation by @TalinTheDev and @alex-oh205", .{}, 700, 475, rl.Color.black);
         drawText("Controls: ", .{}, 700, 520, rl.Color.black);
-        drawText("- W/A/S/D for Translational Movement: ", .{}, 700, 545, rl.Color.black);
-        drawText("- Left/Right Arrow Keys for Rotational Movement: ", .{}, 700, 570, rl.Color.black);
-        drawText("- K to Kidnap Robot (disappointing MCL results)", .{}, 700, 595, rl.Color.black);
+        drawText("- W/S or Up/Down Arrow Keys for Forward/Backward Movement", .{}, 700, 545, rl.Color.black);
+        drawText("- A/D or Left/Right Arrow Keys for Rotational Movement", .{}, 700, 570, rl.Color.black);
+        drawText("- K to Kidnap Robot", .{}, 700, 595, rl.Color.black);
         drawText("- ESC to quit", .{}, 700, 620, rl.Color.black);
 
         // End drawing
