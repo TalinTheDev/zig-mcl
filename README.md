@@ -24,7 +24,7 @@ To move the robots around, use W/A/S/D or arrow keys for movement (the small bla
 circle represent the front).
 
 A good run will eventually look like this: 
-![A screenshot of the simulation running(/latestRun.png)
+![A screenshot of the simulation running](/latestRun.png)
 
 I'm from @TalinTheDev's VEX team (765A), and I've expanded upon his implementation
 of MCL. After way too much research on particle filters, I think I finally understand
