@@ -78,6 +78,15 @@ Some factors could affect MCL that I'm not sure how we would be able to fix if
 we use it for VEX, like other robots on the field, irregular obstacles, and
 symmetry, but those are problems for another time.
 
+### Alex's v2.1.0 Notes
+I've now implemented rescattering of the particles if they stray too far away
+from the robot (such as after kidnapping, which you can now try). I also improved
+the raycasting math, which for some reason made the particle filter 10x faster, so
+that's great. I've also increased the speed of the robot and framerate so the
+simulation feels a lot smoother. Finally, I removed the extra obstacles, so now
+there's just the VEX Push Back field. Despite the symmetry, the particle filter
+works surprisingly well.
+
 ## Running Simulation
 To run, install Zig v0.14.0 and then run: `zig build run`.
 
@@ -123,4 +132,6 @@ v2.0.0 (Alex's Updates)
   - [x] Not bad MCL implementation (much better from v1.0.0)
 
 v2.1.0
+  - [x] Rescattering after kidnap, improved speed
+  - [x] Pretty good MCL implementation
   - [ ] Clean code including comments, structure, neatness, and a proper config
