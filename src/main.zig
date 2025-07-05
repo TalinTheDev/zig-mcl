@@ -72,6 +72,8 @@ pub fn main() !void {
                 robotAcc.setPos(posX, posY);
             }
 
+            robotAcc.heading = robot.heading;
+
             robot.updateSensorLoc();
             robotAcc.updateSensorLoc();
         }

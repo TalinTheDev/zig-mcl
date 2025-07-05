@@ -56,6 +56,7 @@ fn randomBotPos(randEnv: *zprob.RandomEnvironment, color: rl.Color) bot.Robot {
     return robot;
 }
 
+// Randomizes the particle locations
 pub fn scatter(particles: *[]Particle, randEnv: *zprob.RandomEnvironment, robot: *bot.Robot) void {
     for (particles.*) |*p| {
         p.robot = randomBotPos(randEnv, rl.Color.green);
