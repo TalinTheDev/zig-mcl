@@ -1,4 +1,4 @@
-// Copyright 2025 Talin Sharma. Subject to the Apache-2.0 license.
+// Copyright 2025 Talin Sharma and Alex Oh. Subject to the Apache-2.0 license.
 //! Contains the logic for the simulation's robot
 
 // Imports
@@ -15,11 +15,11 @@ pub const Robot = struct {
     sPos: rl.Vector2 = rl.Vector2{ .x = 0, .y = 0 },
     radius: f32 = 10,
     heading: f32 = -90,
-    speed: f32 = 30,
-    angularSpeed: f32 = 80,
-    realSpeed: f32 = 30,
-    realAngularSpeed: f32 = 80,
-    viewDistance: f32 = 500,
+    speed: f32 = 100,
+    angularSpeed: f32 = 150,
+    realSpeed: f32 = 100,
+    realAngularSpeed: f32 = 150,
+    viewDistance: f32 = 1000,
     color: rl.Color = rl.Color.orange,
     isParticle: bool = false,
     isEstimate: bool = false,
@@ -43,9 +43,6 @@ pub const Robot = struct {
     pub fn draw(self: *Robot) void {
         rl.drawCircleV(self.pos, self.radius, self.color);
         rl.drawCircleV(self.sPos, self.radius / 4, rl.Color.black);
-        // for (self.castRays()) |ray| {
-        //     rl.drawLine(lib.fti(ray.start.x), lib.fti(ray.start.y), lib.fti(ray.end.x), lib.fti(ray.end.y), rl.Color.red);
-        // }
     }
 
     /// Returns an array of four floats representing the closest distance
@@ -56,28 +53,49 @@ pub const Robot = struct {
         var dists: [rays.len]f32 = undefined;
         for (rays, 0..) |ray, i| {
             var closestDist: f32 = std.math.floatMax(f32);
-            for (lib.walls) |wallToCheck| {
-                const d = (ray.start.x - ray.end.x) * (wallToCheck.start.y - wallToCheck.end.y) - (ray.start.y - ray.end.y) * (wallToCheck.start.x - wallToCheck.end.x);
+            var closestHitPoint: ?rl.Vector2 = null;
+            for (lib.walls) |w| {
+                const d1 = ray.end.subtract(ray.start); // Vector for the ray
+                const d2 = w.end.subtract(w.start); // Vector for the wall
+                const p = w.start.subtract(ray.start); // Vector from ray start point to wall start point
 
-                if (d == 0) {
+                const denom = rm.vector2CrossProduct(d1, d2); // Denominator for t and u parametric variables
+
+                // Check if lines are parallel
+                if (@abs(denom) < 1) {
                     continue;
                 }
-                const t = ((ray.start.x - wallToCheck.start.x) * (wallToCheck.start.y - wallToCheck.end.y) - (ray.start.y - wallToCheck.start.y) * (wallToCheck.start.x - wallToCheck.end.x)) / d;
 
-                // const u = ((ray.start.x - wallToCheck.start.x) * (ray.start.y - ray.end.y) - (ray.start.y - wallToCheck.start.y) * (ray.start.x - ray.end.y)) / d;
+                // Calculate parametric variables for intersection point
+                // t for the ray, u for the wall, with t,u = 0 and t,u = 1 representing the start and end points of each segment
+                const t = rm.vector2CrossProduct(p, d2) / denom;
+                const u = rm.vector2CrossProduct(p, d1) / denom;
 
-                const hitPoint = rl.Vector2{
-                    .x = ray.start.x + t * (ray.end.x - ray.start.x),
-                    .y = ray.start.y + t * (ray.end.y - ray.start.y),
-                };
+                // Make sure intersection point is on both line segments
+                if (t < 0.0 or t > 1.0 or u < 0.0 or u > 1.0) {
+                    continue;
+                }
 
-                const dist = rm.vector2Length(rm.vector2Subtract(hitPoint, ray.start));
+                // Get intersection point relative to ray start
+                const relativeHitPoint = d1.scale(t);
+                const dist = relativeHitPoint.length(); // Distance from ray start to hit point
 
+                // Get absolute intersection point
+                const hitPoint = ray.start.add(d1.scale(t));
+
+                // Keep track of closest hit point
                 if (dist < closestDist) {
                     closestDist = dist;
-                    // rl.drawLine(lib.fti(ray.start.x), lib.fti(ray.start.y), lib.fti(hitPoint.x), lib.fti(hitPoint.y), rl.Color.red);
+                    closestHitPoint = hitPoint;
                 }
             }
+
+            // For debugging purposes
+            // if (closestHitPoint) |closestHit| {
+            //     if (!self.isParticle) {
+            //         rl.drawLine(lib.fti(ray.start.x), lib.fti(ray.start.y), lib.fti(closestHit.x), lib.fti(closestHit.y), rl.Color.red);
+            //     }
+            // }
 
             if (!exact) {
                 // Use a normal distribution to vary the sensor reading
@@ -89,6 +107,7 @@ pub const Robot = struct {
 
             dists[i] = closestDist;
         }
+
         return dists;
     }
 
@@ -218,9 +237,9 @@ pub const Robot = struct {
     /// Check wall collisions
     pub fn checkCollision(self: *Robot) bool {
         for (0..lib.walls.len) |i| {
-            const wallToCheck = lib.wall.walls[i];
+            const w = lib.wall.walls[i];
 
-            if (rl.checkCollisionCircleLine(self.pos, self.radius, wallToCheck.start, wallToCheck.end)) {
+            if (rl.checkCollisionCircleLine(self.pos, self.radius, w.start, w.end)) {
                 return true;
             }
         }

@@ -1,4 +1,4 @@
-// Copyright 2025 Talin Sharma. Subject to the Apache-2.0 license.
+// Copyright 2025 Talin Sharma and Alex Oh. Subject to the Apache-2.0 license.
 //! Contains the logic for the simulation's particles
 
 // Imports
@@ -10,8 +10,7 @@ const wall = @import("wall.zig");
 const zprob = @import("zprob");
 const lib = @import("root.zig");
 
-var frames: i32 = 0;
-var resampleFrames: i32 = 0;
+var rescatterFrames: i32 = 0;
 
 /// Represents a particle
 pub const Particle = struct {
@@ -53,6 +52,13 @@ fn randomBotPos(randEnv: *zprob.RandomEnvironment, color: rl.Color) bot.Robot {
     return robot;
 }
 
+pub fn scatter(particles: *[]Particle, randEnv: *zprob.RandomEnvironment, robot: *bot.Robot) void {
+    for (particles.*) |*p| {
+        p.robot = randomBotPos(randEnv, rl.Color.green);
+        p.robot.heading = robot.heading;
+    }
+}
+
 /// Updates the particles in four steps: movement, weight calculation, finding estimated robot position, and resampling. Returns the estimated robot
 pub fn updateParticles(particles: *[]Particle, comptime count: i32, randEnv: *zprob.RandomEnvironment, actualSensorStDev: f32, sensorStDev: f32, speedStDev: f32, angularSpeedStDev: f32, threshold: f32, robot: *bot.Robot) bot.Robot {
     // Update the position of each particle's simulated robot based on actual robot movement
@@ -63,6 +69,7 @@ pub fn updateParticles(particles: *[]Particle, comptime count: i32, randEnv: *zp
     calculateWeights(particles, randEnv, actualSensorStDev, sensorStDev, robot);
     const estimatedBot = bestEstimate(particles.*);
     resample(particles, count, randEnv, threshold);
+    rescatterFrames += 1;
 
     return estimatedBot;
 }
@@ -92,7 +99,7 @@ pub fn calculateWeights(particles: *[]Particle, randEnv: *zprob.RandomEnvironmen
             angleDiff = 360.0 - angleDiff; // Angle should be between 0 and 180
         }
 
-        weight *= lib.ftf(randEnv.dNormal(angleDiff, 0.0, 10.0, false) catch {
+        weight *= lib.ftf(randEnv.dNormal(angleDiff, 0.0, 20.0, false) catch {
             std.debug.print("angleDiff: {d}", .{angleDiff});
             return;
         });
@@ -100,22 +107,43 @@ pub fn calculateWeights(particles: *[]Particle, randEnv: *zprob.RandomEnvironmen
         particle.weight = weight;
     }
 
+    // Get greatest weight
+    var greatest: f32 = 0.0;
+    for (particles.*) |p| {
+        if (p.weight > greatest) {
+            greatest = p.weight;
+        }
+    }
+
+    // Rescatter if greatest weight is too low
+    if (greatest < 1e-12 and rescatterFrames > 30) {
+        scatter(particles, randEnv, robot);
+        rescatterFrames = 0; // Prevents rescattering from occuring too often
+        calculateWeights(particles, randEnv, actualSensorStDev, sensorStDev, robot);
+    }
+
     // Normalize weights
     normalizeWeights(particles);
 }
 
+// Adds up all the weights
+fn totalWeights(particles: *[]Particle) f32 {
+    var sum: f32 = 0.0;
+
+    for (particles.*) |p| {
+        sum += p.weight;
+    }
+
+    return sum;
+}
+
 /// Scales all weights so that the sum of the weights is 1
 fn normalizeWeights(particles: *[]Particle) void {
-    var sumWeights: f32 = 0.0;
-
-    // Add up all the weights
-    for (particles.*) |p| {
-        sumWeights += p.weight;
-    }
+    const total = totalWeights(particles);
 
     // Divide all weights by total
     for (particles.*) |*p| {
-        p.weight /= sumWeights;
+        p.weight /= total;
     }
 }
 

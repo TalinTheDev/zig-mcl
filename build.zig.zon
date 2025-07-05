@@ -1,4 +1,4 @@
-// Copyright 2025 Talin Sharma. Subject to the Apache-2.0 license.
+// Copyright 2025 Talin Sharma and Alex Oh. Subject to the Apache-2.0 license.
 .{
     .name = .zig_mcl,
     .version = "0.0.0",

@@ -1,22 +1,22 @@
-// Copyright 2025 Talin Sharma. Subject to the Apache-2.0 license.
+// Copyright 2025 Talin Sharma and Alex Oh. Subject to the Apache-2.0 license.
 //! Contains utility functions used in this project
 
 // Imports
 const rl = @import("raylib");
 
-/// Convert an integer (i32) to a float (f32)
-pub fn itf(int: i32) f32 {
+/// Convert an integer (any int type) to a float (f32)
+pub fn itf(int: anytype) f32 {
     return @as(f32, @floatFromInt(int));
 }
 
-/// Convert a float (f32) to a integer (i32)
+/// Convert a float (f32) to an integer (i32)
 pub fn fti(float: f32) i32 {
     return @as(i32, @intFromFloat(float));
 }
 
 /// Convert a float (f32) to an unsigned integer (u32)
-pub fn ftu(float: f64) u64 {
-    return @as(u64, @intFromFloat(float));
+pub fn ftu(float: f32) u32 {
+    return @as(u32, @intFromFloat(float));
 }
 
 /// Convert a f64 to a f32

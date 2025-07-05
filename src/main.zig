@@ -1,4 +1,4 @@
-// Copyright 2025 Talin Sharma. Subject to the Apache-2.0 license.
+// Copyright 2025 Talin Sharma and Alex Oh. Subject to the Apache-2.0 license.
 //! Project root
 
 // Imports
@@ -19,7 +19,7 @@ pub fn main() !void {
 
     // Initialize window and OpenGL context; Also defer closing both
     rl.initWindow(1500, 700, "MCL Simulation");
-    rl.setTargetFPS(10);
+    rl.setTargetFPS(30);
 
     defer rl.closeWindow();
 
@@ -40,11 +40,11 @@ pub fn main() !void {
 
     // Tuning constants
     const PARTICLE_COUNT: i32 = 2000; // Number of particles
-    const THRESHOLD: f32 = lib.itf(PARTICLE_COUNT) * 0.9; // Regulates resampling frequency using effective sample size. Tune this for optimal performance - high threshold = more resampling
+    const THRESHOLD: f32 = lib.itf(PARTICLE_COUNT) * 0.8; // Regulates resampling frequency using effective sample size. Tune this for optimal performance - high threshold = more resampling
     const ACTUAL_SENSOR_STDEV: f32 = 10.0; // Standard deviation for the actual robot's sensor noise
-    const SENSOR_STDEV: f32 = 20.0; // Standard deviation for comparing simulated sensor readings using normal pdf
-    const SPEED_STDEV: f32 = 10.0; // Standard deviation for all robot speeds
-    const ANGULAR_SPEED_STDEV: f32 = 20.0; // Standard deviation for all robot angular speeds
+    const SENSOR_STDEV: f32 = 100.0; // Standard deviation for comparing simulated sensor readings using normal pdf
+    const SPEED_STDEV: f32 = 15.0; // Standard deviation for all robot speeds
+    const ANGULAR_SPEED_STDEV: f32 = 30.0; // Standard deviation for all robot angular speeds
 
     // Define the particles
     var particles = lib.initParticles(PARTICLE_COUNT, &randEnv);
