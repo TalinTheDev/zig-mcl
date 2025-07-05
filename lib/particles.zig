@@ -16,6 +16,7 @@ var rescatterFrames: i32 = 0;
 pub const Particle = struct {
     robot: bot.Robot,
     weight: f32,
+    id: usize,
 };
 
 /// Returns an array of particles with their position being randomly generated
@@ -26,6 +27,7 @@ pub fn initParticles(comptime count: i32, randEnv: *zprob.RandomEnvironment) []P
         particles[i] = Particle{
             .robot = randomBotPos(randEnv, rl.Color.green), // Assign a simulated robot at a random position
             .weight = 1.0 / lib.itf(count), // Initial normalized weight is 1 / number of particles
+            .id = i,
         };
     }
 
@@ -195,18 +197,18 @@ pub fn resample(particles: *[]Particle, comptime N: i32, randEnv: *zprob.RandomE
 
         var newParticles = std.heap.page_allocator.alloc(Particle, N) catch unreachable; // New array of particles
         var U: f32 = lib.ftf(randEnv.rUniform(0, 1.0 / lib.itf(N))); // Initial random U value, uniformly from 0 to 1 / number of particles
-        var cumulative: f32 = 0; // Cumulative sum of weights
+        var cumulative: f32 = particles.*[0].weight; // Cumulative sum of weights, starts as just the first weight
         var i: usize = 0; // Index of the particle chosen to be resampled
 
         for (0..N) |n| { // N particles will be resampled, one for every iteration
             U += 1.0 / lib.itf(N); // Increment U by 1 / number of particles (weight when all particles have equal weights)
-            while (U > cumulative and i < particles.len - 1) { // Add weights to cumulative until the cumulative weight is greater than U. The last weight added will be resampled
-                cumulative += particles.*[i].weight; // Cumulatively add the weight of the particles starting from the first
+            while (U > cumulative and i < particles.len - 2) { // Add weights to cumulative until the cumulative weight is greater than U. The last weight added will be resampled
                 i += 1; // Increment the index of the chosen particle by 1
+                cumulative += particles.*[i].weight; // Cumulatively add the weight of the particles starting from the first
             }
 
             newParticles[n] = particles.*[i]; // Resample the chosen particle into the new array
-            cumulative = 0; // Reset cumulative
+            cumulative = particles.*[0].weight; // Reset cumulative
             i = 0; // Reset index
         }
 

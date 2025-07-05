@@ -210,24 +210,40 @@ pub const Robot = struct {
             const prevPosX = self.pos.x;
             const prevPosY = self.pos.y;
 
+            const deltaX = self.realSpeed * @cos(std.math.degreesToRadians(self.heading)) * rl.getFrameTime();
+            const deltaY = self.realSpeed * @sin(std.math.degreesToRadians(self.heading)) * rl.getFrameTime();
+            const dirX: f32 = std.math.sign(deltaX);
+            const dirY: f32 = std.math.sign(deltaY);
+
             // delta position = speed * delta time (time between frames)
-            self.pos.x += self.realSpeed * @cos(std.math.degreesToRadians(self.heading)) * rl.getFrameTime();
-            var dirX: f32 = std.math.sign(prevPosX - self.pos.x);
-
-            // Check for collisions and back out horizontally if colliding
-            while (self.checkCollision()) {
-                if (dirX == 0.0) dirX = 1.0;
-                self.pos.x += dirX;
+            while (@abs(self.pos.x - prevPosX) < @abs(deltaX)) {
+                self.pos.x += dirX * 0.1;
+                if (self.checkCollision()) {
+                    self.pos.x -= dirX * 0.1;
+                    break;
+                }
             }
 
-            self.pos.y += self.realSpeed * @sin(std.math.degreesToRadians(self.heading)) * rl.getFrameTime();
-            var dirY: f32 = std.math.sign(prevPosY - self.pos.y);
+            // // Check for collisions and back out horizontally if colliding
+            // while (self.checkCollision()) {
+            //     if (dirX == 0.0) dirX = 1.0;
+            //     self.pos.x += dirX;
+            // }
 
-            // Check for collisions and back out vertically if colliding
-            while (self.checkCollision()) {
-                if (dirY == 0.0) dirY = 1.0;
-                self.pos.y += dirY;
+            // delta position = speed * delta time (time between frames)
+            while (@abs(self.pos.y - prevPosY) < @abs(deltaY)) {
+                self.pos.y += dirY * 0.1;
+                if (self.checkCollision()) {
+                    self.pos.y -= dirY * 0.1;
+                    break;
+                }
             }
+
+            // // Check for collisions and back out vertically if colliding
+            // while (self.checkCollision()) {
+            //     if (dirY == 0.0) dirY = 1.0;
+            //     self.pos.y += dirY;
+            // }
 
             self.heading += self.realAngularSpeed * rl.getFrameTime();
             self.updateSensorLoc();
