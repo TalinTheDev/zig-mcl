@@ -7,6 +7,7 @@ const rl = @import("raylib");
 const rm = rl.math;
 const wall = @import("wall.zig");
 const lib = @import("root.zig");
+const config = @import("config.zig");
 const zprob = @import("zprob");
 
 /// Robot
@@ -48,14 +49,13 @@ pub const Robot = struct {
     /// Returns an array of four floats representing the closest distance
     /// detected by each ray cast from each direction of the robot
     // Just trust the math bro, idek
-    pub fn distanceToClosestSide(self: *Robot, exact: bool, randEnv: *zprob.RandomEnvironment, stdev: f32) [4]f32 {
+    pub fn distanceToClosestSide(self: *Robot, exact: bool, randEnv: *zprob.RandomEnvironment) [4]f32 {
         const rays = self.castRays();
         var dists: [rays.len]f32 = undefined;
         for (rays, 0..) |ray, i| {
             var closestDist: f32 = std.math.floatMax(f32);
-            var closestHitPoint: ?rl.Vector2 = null;
+            const d1 = ray.end.subtract(ray.start); // Vector for the ray
             for (lib.walls) |w| {
-                const d1 = ray.end.subtract(ray.start); // Vector for the ray
                 const d2 = w.end.subtract(w.start); // Vector for the wall
                 const p = w.start.subtract(ray.start); // Vector from ray start point to wall start point
 
@@ -80,30 +80,32 @@ pub const Robot = struct {
                 const relativeHitPoint = d1.scale(t);
                 const dist = relativeHitPoint.length(); // Distance from ray start to hit point
 
-                // Get absolute intersection point
-                const hitPoint = ray.start.add(d1.scale(t));
-
-                // Keep track of closest hit point
+                // Keep track of closest distance
                 if (dist < closestDist) {
                     closestDist = dist;
-                    closestHitPoint = hitPoint;
+                }
+            }
+
+            if (!exact) {
+                // Use a normal distribution to vary the sensor reading
+                closestDist = lib.ftf(randEnv.rNormal(closestDist, config.ACTUAL_SENSOR_STDEV) catch {
+                    std.debug.print("dist: {d}", .{closestDist});
+                    return [4]f32{ 0, 0, 0, 0 };
+                });
+
+                // Make sure distance is not negative
+                if (closestDist < 0) {
+                    closestDist = 0;
                 }
             }
 
             // For debugging purposes
-            // if (closestHitPoint) |closestHit| {
+            // if (closestDist < std.math.floatMax(f32)) {
             //     if (!self.isParticle) {
-            //         rl.drawLine(lib.fti(ray.start.x), lib.fti(ray.start.y), lib.fti(closestHit.x), lib.fti(closestHit.y), rl.Color.red);
+            //         const closestHitPoint = ray.start.add(d1.normalize().scale(closestDist));
+            //         rl.drawLine(lib.fti(ray.start.x), lib.fti(ray.start.y), lib.fti(closestHitPoint.x), lib.fti(closestHitPoint.y), rl.Color.red);
             //     }
             // }
-
-            if (!exact) {
-                // Use a normal distribution to vary the sensor reading
-                closestDist = lib.ftf(randEnv.rNormal(closestDist, stdev) catch {
-                    std.debug.print("dist: {d}, stdev: {d}", .{ closestDist, stdev });
-                    return [4]f32{ 0, 0, 0, 0 };
-                });
-            }
 
             dists[i] = closestDist;
         }
@@ -170,14 +172,14 @@ pub const Robot = struct {
     }
 
     /// Handles movement for a robot
-    pub fn update(self: *Robot, exact: bool, randEnv: *zprob.RandomEnvironment, speedStDev: f32, angularSpeedStDev: f32, actualSpeed: f32, actualAngularSpeed: f32) void {
+    pub fn update(self: *Robot, exact: bool, randEnv: *zprob.RandomEnvironment, actualSpeed: f32, actualAngularSpeed: f32) void {
         if (!self.isEstimate) {
             // Generate randomness using normal distribution
-            const noise: f32 = if (!exact) lib.ftf(randEnv.rNormal(0, speedStDev) catch {
+            const noise: f32 = if (!exact) lib.ftf(randEnv.rNormal(0, config.SPEED_STDEV) catch {
                 std.debug.print("invalid speed noise", .{});
                 return;
             }) else 0.0;
-            const noiseA: f32 = if (!exact) lib.ftf(randEnv.rNormal(0, angularSpeedStDev) catch {
+            const noiseA: f32 = if (!exact) lib.ftf(randEnv.rNormal(0, config.ANGULAR_SPEED_STDEV) catch {
                 std.debug.print("invalid angular noise", .{});
                 return;
             }) else 0.0;
@@ -210,12 +212,13 @@ pub const Robot = struct {
             const prevPosX = self.pos.x;
             const prevPosY = self.pos.y;
 
+            // delta position = speed * delta time (time between frames)
             const deltaX = self.realSpeed * @cos(std.math.degreesToRadians(self.heading)) * rl.getFrameTime();
             const deltaY = self.realSpeed * @sin(std.math.degreesToRadians(self.heading)) * rl.getFrameTime();
             const dirX: f32 = std.math.sign(deltaX);
             const dirY: f32 = std.math.sign(deltaY);
 
-            // delta position = speed * delta time (time between frames)
+            // Move horizontally in small steps until deltaX is reached or a collision is detected
             while (@abs(self.pos.x - prevPosX) < @abs(deltaX)) {
                 self.pos.x += dirX * 0.1;
                 if (self.checkCollision()) {
@@ -224,13 +227,7 @@ pub const Robot = struct {
                 }
             }
 
-            // // Check for collisions and back out horizontally if colliding
-            // while (self.checkCollision()) {
-            //     if (dirX == 0.0) dirX = 1.0;
-            //     self.pos.x += dirX;
-            // }
-
-            // delta position = speed * delta time (time between frames)
+            // Move vertically in small steps until deltaY is reached or a collision is detected
             while (@abs(self.pos.y - prevPosY) < @abs(deltaY)) {
                 self.pos.y += dirY * 0.1;
                 if (self.checkCollision()) {
@@ -239,12 +236,7 @@ pub const Robot = struct {
                 }
             }
 
-            // // Check for collisions and back out vertically if colliding
-            // while (self.checkCollision()) {
-            //     if (dirY == 0.0) dirY = 1.0;
-            //     self.pos.y += dirY;
-            // }
-
+            // Move angularly
             self.heading += self.realAngularSpeed * rl.getFrameTime();
             self.updateSensorLoc();
         }

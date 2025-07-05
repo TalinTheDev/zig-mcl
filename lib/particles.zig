@@ -9,8 +9,10 @@ const utils = @import("utils.zig");
 const wall = @import("wall.zig");
 const zprob = @import("zprob");
 const lib = @import("root.zig");
+const config = @import("config.zig");
 
-var rescatterFrames: i32 = 0;
+const N = config.PARTICLE_COUNT;
+var rescatterFrames: f32 = 0.0;
 
 /// Represents a particle
 pub const Particle = struct {
@@ -21,12 +23,12 @@ pub const Particle = struct {
 
 /// Returns an array of particles with their position being randomly generated
 /// within the field's boundaries
-pub fn initParticles(comptime count: i32, randEnv: *zprob.RandomEnvironment) []Particle {
-    var particles = std.heap.page_allocator.alloc(Particle, count) catch unreachable; // Create an array of count particles
-    for (0..count) |i| {
+pub fn initParticles(randEnv: *zprob.RandomEnvironment) []Particle {
+    var particles = std.heap.page_allocator.alloc(Particle, N) catch unreachable; // Create an array of count particles
+    for (0..N) |i| {
         particles[i] = Particle{
             .robot = randomBotPos(randEnv, rl.Color.green), // Assign a simulated robot at a random position
-            .weight = 1.0 / lib.itf(count), // Initial normalized weight is 1 / number of particles
+            .weight = 1.0 / lib.itf(N), // Initial normalized weight is 1 / number of particles
             .id = i,
         };
     }
@@ -62,35 +64,35 @@ pub fn scatter(particles: *[]Particle, randEnv: *zprob.RandomEnvironment, robot:
 }
 
 /// Updates the particles in four steps: movement, weight calculation, finding estimated robot position, and resampling. Returns the estimated robot
-pub fn updateParticles(particles: *[]Particle, comptime count: i32, randEnv: *zprob.RandomEnvironment, actualSensorStDev: f32, sensorStDev: f32, speedStDev: f32, angularSpeedStDev: f32, threshold: f32, robot: *bot.Robot) bot.Robot {
+pub fn updateParticles(particles: *[]Particle, randEnv: *zprob.RandomEnvironment, robot: *bot.Robot) bot.Robot {
     // Update the position of each particle's simulated robot based on actual robot movement
     for (particles.*) |*particle| {
-        particle.robot.update(false, randEnv, speedStDev, angularSpeedStDev, robot.realSpeed, robot.realAngularSpeed);
+        particle.robot.update(false, randEnv, robot.realSpeed, robot.realAngularSpeed);
     }
 
-    calculateWeights(particles, randEnv, actualSensorStDev, sensorStDev, robot);
+    calculateWeights(particles, randEnv, robot);
     const estimatedBot = bestEstimate(particles.*);
-    resample(particles, count, randEnv, threshold);
+    resample(particles, randEnv);
     rescatterFrames += 1;
 
     return estimatedBot;
 }
 
 /// Calculates weights for each particle by comparing simulated sensor readings with the actual sensor readings and a normal distribution
-pub fn calculateWeights(particles: *[]Particle, randEnv: *zprob.RandomEnvironment, actualSensorStDev: f32, sensorStDev: f32, robot: *bot.Robot) void {
+pub fn calculateWeights(particles: *[]Particle, randEnv: *zprob.RandomEnvironment, robot: *bot.Robot) void {
     // Get list of distance sensor readings of the actual robot
-    const robotDist = robot.distanceToClosestSide(false, randEnv, actualSensorStDev);
+    const robotDist = robot.distanceToClosestSide(false, randEnv);
 
     // Loop through each particle and calculate the weight
     for (particles.*) |*particle| {
         // Get list of distance sensor readings of the simulated robot
-        const particleDist = particle.robot.distanceToClosestSide(true, randEnv, 0.0);
+        const particleDist = particle.robot.distanceToClosestSide(true, randEnv);
         var weight: f32 = 1.0;
 
         // Loop through each sensor and get the probability of the simulated sensor's reading based on the normal distribution of the actual robot's sensor reading
         for (0..particleDist.len) |i| {
-            weight *= lib.ftf(randEnv.dNormal(particleDist[i], robotDist[i], sensorStDev, false) catch {
-                std.debug.print("particleDist: {d}, robotDist: {d}, stdev: {d}", .{ particleDist[i], robotDist[i], sensorStDev });
+            weight *= lib.ftf(randEnv.dNormal(particleDist[i], robotDist[i], config.SENSOR_STDEV, false) catch {
+                std.debug.print("particleDist: {d}, robotDist: {d}", .{ particleDist[i], robotDist[i] });
                 return;
             });
         }
@@ -118,10 +120,10 @@ pub fn calculateWeights(particles: *[]Particle, randEnv: *zprob.RandomEnvironmen
     }
 
     // Rescatter if greatest weight is too low
-    if (greatest < 1e-12 and rescatterFrames > 30) {
+    if (greatest < config.RESCATTER_MAX_WEIGHT and rescatterFrames > config.RESCATTER_DELAY * lib.itf(rl.getFPS())) {
         scatter(particles, randEnv, robot);
         rescatterFrames = 0; // Prevents rescattering from occuring too often
-        calculateWeights(particles, randEnv, actualSensorStDev, sensorStDev, robot);
+        calculateWeights(particles, randEnv, robot);
     }
 
     // Normalize weights
@@ -186,9 +188,9 @@ fn effectiveSampleSize(particles: []Particle) f32 {
 }
 
 /// Resamples the particles and moves them accordingly
-pub fn resample(particles: *[]Particle, comptime N: i32, randEnv: *zprob.RandomEnvironment, threshold: f32) void {
+pub fn resample(particles: *[]Particle, randEnv: *zprob.RandomEnvironment) void {
     // Only resample when the effective sample size is less than the threshold (tune the threshold for optimal performance)
-    if (effectiveSampleSize(particles.*) < threshold) {
+    if (effectiveSampleSize(particles.*) < config.THRESHOLD) {
         // Low-variance resampling algorithm
 
         // This algorithm makes sure the variance in the weights is low

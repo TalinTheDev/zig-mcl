@@ -13,6 +13,7 @@ pub usingnamespace @import("utils.zig");
 pub usingnamespace @import("bot.zig");
 pub usingnamespace @import("particles.zig");
 pub usingnamespace @import("wall.zig");
+pub usingnamespace @import("config.zig");
 
 /// Checks for a horizontal collision between a robot and a wall
 pub fn checkHorizontalCollision(robot: *bot.Robot, wallNum: usize, rightX: bool) bool {

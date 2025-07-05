@@ -33,30 +33,21 @@ pub fn main() !void {
     defer rl.unloadFont(font);
 
     // Define the robots
-    const CENTER = rl.Vector2{ .x = 125, .y = 125 };
-    var robot = lib.Robot.init(CENTER, -90, rl.Color.orange, false);
-    var robotAcc = lib.Robot.init(CENTER, -90, rl.Color.blue, false);
-    var mclBot = lib.Robot.init(CENTER, -90, rl.Color.pink, false);
-
-    // Tuning constants
-    const PARTICLE_COUNT: i32 = 2000; // Number of particles
-    const THRESHOLD: f32 = lib.itf(PARTICLE_COUNT) * 0.8; // Regulates resampling frequency using effective sample size. Tune this for optimal performance - high threshold = more resampling
-    const ACTUAL_SENSOR_STDEV: f32 = 10.0; // Standard deviation for the actual robot's sensor noise
-    const SENSOR_STDEV: f32 = 10.0; // Standard deviation for comparing simulated sensor readings using normal pdf
-    const SPEED_STDEV: f32 = 15.0; // Standard deviation for all robot speeds
-    const ANGULAR_SPEED_STDEV: f32 = 30.0; // Standard deviation for all robot angular speeds
+    var robot = lib.Robot.init(lib.CENTER, -90, rl.Color.orange, false);
+    var robotAcc = lib.Robot.init(lib.CENTER, -90, rl.Color.blue, false);
+    var mclBot = lib.Robot.init(lib.CENTER, -90, rl.Color.pink, false);
 
     // Define the particles
-    var particles = lib.initParticles(PARTICLE_COUNT, &randEnv);
+    var particles = lib.initParticles(&randEnv);
 
     // While window should stay open...
     while (!rl.windowShouldClose()) {
         // Updates
 
         // Handle inputs
-        robot.update(true, &randEnv, SPEED_STDEV, ANGULAR_SPEED_STDEV, 0, 0); // Estimated robot uses exact movement
-        robotAcc.update(false, &randEnv, SPEED_STDEV, ANGULAR_SPEED_STDEV, 0, 0); // Actual robot uses random movement
-        mclBot = lib.updateParticles(&particles, PARTICLE_COUNT, &randEnv, ACTUAL_SENSOR_STDEV, SENSOR_STDEV, SPEED_STDEV, ANGULAR_SPEED_STDEV, THRESHOLD, &robotAcc);
+        robot.update(true, &randEnv, 0, 0); // Estimated robot uses exact movement
+        robotAcc.update(false, &randEnv, 0, 0); // Actual robot uses random movement
+        mclBot = lib.updateParticles(&particles, &randEnv, &robotAcc);
 
         // Robot kidnapping (moving to random position)
         if (rl.isKeyPressed(rl.KeyboardKey.k)) {
