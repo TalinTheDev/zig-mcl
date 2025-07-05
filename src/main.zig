@@ -42,7 +42,7 @@ pub fn main() !void {
     const PARTICLE_COUNT: i32 = 2000; // Number of particles
     const THRESHOLD: f32 = lib.itf(PARTICLE_COUNT) * 0.8; // Regulates resampling frequency using effective sample size. Tune this for optimal performance - high threshold = more resampling
     const ACTUAL_SENSOR_STDEV: f32 = 10.0; // Standard deviation for the actual robot's sensor noise
-    const SENSOR_STDEV: f32 = 100.0; // Standard deviation for comparing simulated sensor readings using normal pdf
+    const SENSOR_STDEV: f32 = 10.0; // Standard deviation for comparing simulated sensor readings using normal pdf
     const SPEED_STDEV: f32 = 15.0; // Standard deviation for all robot speeds
     const ANGULAR_SPEED_STDEV: f32 = 30.0; // Standard deviation for all robot angular speeds
 
