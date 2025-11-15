@@ -9,7 +9,7 @@ const rl = @import("raylib");
 pub const CENTER = rl.Vector2{ .x = 125, .y = 125 };
 
 // Tuning constants
-pub const PARTICLE_COUNT: i32 = 2000; // Number of particles
+pub const PARTICLE_COUNT: i32 = 1000; // Number of particles
 pub const THRESHOLD: f32 = lib.itf(PARTICLE_COUNT) * 0.5; // Minimum effective sample size before resampling. Tune this for optimal performance: higher threshold = more resampling
 pub const ACTUAL_SENSOR_STDEV: f32 = 10.0; // Standard deviation for the actual robot's sensor noise
 pub const SENSOR_STDEV: f32 = 20.0; // Standard deviation for comparing simulated sensor readings using normal pdf

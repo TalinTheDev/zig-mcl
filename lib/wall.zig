@@ -87,22 +87,22 @@ var wallList = [_]Wall{
     // },
 
     // VEX Field
-    Wall{
-        .start = V2{ .x = 225, .y = 125 },
-        .end = V2{ .x = 475, .y = 125 },
-    },
-    Wall{
-        .start = V2{ .x = 225, .y = 575 },
-        .end = V2{ .x = 475, .y = 575 },
-    },
-    Wall{
-        .start = V2{ .x = 300, .y = 300 },
-        .end = V2{ .x = 390, .y = 390 },
-    },
-    Wall{
-        .start = V2{ .x = 390, .y = 300 },
-        .end = V2{ .x = 300, .y = 390 },
-    },
+    // Wall{
+    //     .start = V2{ .x = 225, .y = 125 },
+    //     .end = V2{ .x = 475, .y = 125 },
+    // },
+    // Wall{
+    //     .start = V2{ .x = 225, .y = 575 },
+    //     .end = V2{ .x = 475, .y = 575 },
+    // },
+    // Wall{
+    //     .start = V2{ .x = 300, .y = 300 },
+    //     .end = V2{ .x = 390, .y = 390 },
+    // },
+    // Wall{
+    //     .start = V2{ .x = 390, .y = 300 },
+    //     .end = V2{ .x = 300, .y = 390 },
+    // },
 };
 
 pub const walls: []Wall = wallList[0..wallList.len];

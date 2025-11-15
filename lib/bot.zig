@@ -49,7 +49,7 @@ pub const Robot = struct {
     /// Returns an array of four floats representing the closest distance
     /// detected by each ray cast from each direction of the robot
     // Just trust the math bro, idek
-    pub fn distanceToClosestSide(self: *Robot, exact: bool, randEnv: *zprob.RandomEnvironment) [4]f32 {
+    pub fn distanceToClosestSide(self: *Robot, exact: bool, randEnv: *zprob.RandomEnvironment) [3]f32 {
         const rays = self.castRays();
         var dists: [rays.len]f32 = undefined;
         for (rays, 0..) |ray, i| {
@@ -90,7 +90,7 @@ pub const Robot = struct {
                 // Use a normal distribution to vary the sensor reading
                 closestDist = lib.ftf(randEnv.rNormal(closestDist, config.ACTUAL_SENSOR_STDEV) catch {
                     std.debug.print("dist: {d}", .{closestDist});
-                    return [4]f32{ 0, 0, 0, 0 };
+                    return [3]f32{ 0, 0, 0 };
                 });
 
                 // Make sure distance is not negative
@@ -114,16 +114,16 @@ pub const Robot = struct {
     }
 
     pub const Ray = struct { start: rl.Vector2, end: rl.Vector2 };
-    pub fn castRays(self: *Robot) [4]Ray {
+    pub fn castRays(self: *Robot) [3]Ray {
         // -90 Deg Ray
-        const rayStart90 = rl.Vector2{
-            .x = self.sPos.x + ((self.radius / 4) * @cos(std.math.degreesToRadians(self.heading))),
-            .y = self.sPos.y + ((self.radius / 4) * @sin(std.math.degreesToRadians(self.heading))),
-        };
-        const rayEnd90 = rl.Vector2{
-            .x = rayStart90.x + self.viewDistance * @cos(std.math.degreesToRadians(self.heading)),
-            .y = rayStart90.y + self.viewDistance * @sin(std.math.degreesToRadians(self.heading)),
-        };
+        // const rayStart90 = rl.Vector2{
+        //     .x = self.sPos.x + ((self.radius / 4) * @cos(std.math.degreesToRadians(self.heading))),
+        //     .y = self.sPos.y + ((self.radius / 4) * @sin(std.math.degreesToRadians(self.heading))),
+        // };
+        // const rayEnd90 = rl.Vector2{
+        //     .x = rayStart90.x + self.viewDistance * @cos(std.math.degreesToRadians(self.heading)),
+        //     .y = rayStart90.y + self.viewDistance * @sin(std.math.degreesToRadians(self.heading)),
+        // };
 
         // -270 Deg Ray
         const rayStart270 = rl.Vector2{
@@ -156,7 +156,7 @@ pub const Robot = struct {
         };
 
         return [_]Ray{
-            Ray{ .start = rayStart90, .end = rayEnd90 },
+            // Ray{ .start = rayStart90, .end = rayEnd90 },
             Ray{ .start = rayStart270, .end = rayEnd270 },
             Ray{ .start = rayStart0, .end = rayEnd0 },
             Ray{ .start = rayStart180, .end = rayEnd180 },

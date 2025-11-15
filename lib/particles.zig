@@ -199,20 +199,18 @@ pub fn resample(particles: *[]Particle, randEnv: *zprob.RandomEnvironment) void 
         // The particle count remains the same
 
         var newParticles = std.heap.page_allocator.alloc(Particle, N) catch unreachable; // New array of particles
-        var U: f32 = lib.ftf(randEnv.rUniform(0, 1.0 / lib.itf(N))); // Initial random U value, uniformly from 0 to 1 / number of particles
+        const r: f32 = lib.ftf(randEnv.rUniform(0, 1.0 / lib.itf(N))); // Initial random U value, uniformly from 0 to 1 / number of particles
         var cumulative: f32 = particles.*[0].weight; // Cumulative sum of weights, starts as just the first weight
         var i: usize = 0; // Index of the particle chosen to be resampled
 
         for (0..N) |n| { // N particles will be resampled, one for every iteration
-            U += 1.0 / lib.itf(N); // Increment U by 1 / number of particles (weight when all particles have equal weights)
-            while (U > cumulative and i < particles.len - 2) { // Add weights to cumulative until the cumulative weight is greater than U. The last weight added will be resampled
+            const U = r + lib.itf(n) * 1.0 / lib.itf(N); // Increment U by 1 / number of particles (weight when all particles have equal weights)
+            while (U > cumulative and i < particles.len - 1) { // Add weights to cumulative until the cumulative weight is greater than U. The last weight added will be resampled
                 i += 1; // Increment the index of the chosen particle by 1
                 cumulative += particles.*[i].weight; // Cumulatively add the weight of the particles starting from the first
             }
 
             newParticles[n] = particles.*[i]; // Resample the chosen particle into the new array
-            cumulative = particles.*[0].weight; // Reset cumulative
-            i = 0; // Reset index
         }
 
         std.heap.page_allocator.free(particles.*);
